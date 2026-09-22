@@ -12,7 +12,7 @@
 
 <!-- ══════════ 提醒条 ══════════ -->
 <div class="alert" id="alertBar" style="display:none">
-  <div class="wrap"><span id="alertText"></span><button onclick="dismissAlert()" aria-label="关闭">×</button></div>
+  <div class="wrap"><span id="alertText"></span><button data-act="dismiss-alert" aria-label="关闭">×</button></div>
 </div>
 
 <!-- ══════════ 导航 56px ══════════ -->
@@ -28,21 +28,22 @@
       <a href="#resume">简历墙</a>
     </div>
     <div class="nav-right">
-      <button class="btn btn-ghost btn-sm" onclick="exportJSON()">导出</button>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileIn').click()">导入</button>
-      <button class="burger" onclick="document.getElementById('drawer').classList.toggle('open')">☰</button>
+      <button class="btn btn-ghost btn-sm" data-act="export">导出</button>
+      <button class="btn btn-ghost btn-sm" data-act="import">导入</button>
+      <button class="burger" data-act="burger" aria-label="菜单">☰</button>
     </div>
   </div>
 </nav>
 <div class="drawer" id="drawer">
-  <a href="#dash" onclick="closeDrawer()">总览</a>
-  <a href="#paper" onclick="closeDrawer()">小论文</a>
-  <a href="#thesis" onclick="closeDrawer()">大论文</a>
-  <a href="#patent" onclick="closeDrawer()">专利</a>
-  <a href="#ip" onclick="closeDrawer()">软著与软件</a>
-  <a href="#resume" onclick="closeDrawer()">简历墙</a>
+  <a href="#dash" data-act="drawer">总览</a>
+  <a href="#paper" data-act="drawer">小论文</a>
+  <a href="#thesis" data-act="drawer">大论文</a>
+  <a href="#patent" data-act="drawer">专利</a>
+  <a href="#ip" data-act="drawer">软著与软件</a>
+  <a href="#shelf" data-act="drawer">资料架</a>
+  <a href="#resume" data-act="drawer">简历墙</a>
 </div>
-<input type="file" id="fileIn" accept="application/json,.json" style="display:none" onchange="importJSON(this)">
+<input type="file" id="fileIn" accept="application/json,.json" style="display:none" data-act="import-file">
 
 <!-- ══════════ Hero ══════════ -->
 <header class="hero" id="top">
@@ -63,20 +64,55 @@
       <span class="en">OVERVIEW</span>
       <span class="grow"></span>
     </div>
+    <div class="composer" id="composer">
+      <label class="composer-label">快速录入</label>
+      <select id="qcType" aria-label="类型">
+        <option value="paper">小论文</option>
+        <option value="thesis">大论文</option>
+        <option value="patent">专利</option>
+        <option value="copyright" selected>软著</option>
+        <option value="software">软件</option>
+      </select>
+      <input id="qcTitle" placeholder="标题（回车录入）" maxlength="120">
+      <input id="qcDue" type="date" title="可选截止日" style="max-width:150px">
+      <button class="btn btn-primary btn-sm" data-act="quick-add">录入</button>
+    </div>
     <div class="stats" id="stats"></div>
+    <div class="idrow">
+      <div class="idcard">
+        <div class="label">Researcher</div>
+        <div class="id-name" id="idName">RESEARCHER</div>
+        <div class="id-meta" id="idMeta">学术成果管理台 · 本地优先</div>
+        <div class="id-stat" id="idStat">在制 0 · 已定稿 0</div>
+      </div>
+      <div class="clockcard">
+        <div class="label">Console Clock</div>
+        <div class="clock-time" id="clockTime">--:--:--</div>
+        <div class="clock-date" id="clockDate">—</div>
+      </div>
+      <div class="mapcard">
+        <div class="label">成果图谱 / Map</div>
+        <svg id="mapSvg" viewBox="0 0 320 180" width="100%" height="150" aria-label="成果图谱"></svg>
+      </div>
+    </div>
     <div class="cols">
       <div>
         <div class="panel-t">近期节点 · 倒计时</div>
         <div id="deadlines"></div>
         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="openDeadlineEditor()">＋ 添加节点</button>
-          <button class="btn btn-ghost btn-sm" onclick="askNotify()">开启桌面提醒</button>
+          <button class="btn btn-ghost btn-sm" data-act="deadline-new">＋ 添加节点</button>
+          <button class="btn btn-ghost btn-sm" data-act="notify">开启桌面提醒</button>
         </div>
       </div>
       <div>
         <div class="panel-t">最近动态 · 时间线</div>
         <div id="activity"></div>
       </div>
+    </div>
+    <div id="shelf">
+      <div class="panel-t" style="margin-top:28px">资料架 · 全部附件</div>
+      <div class="shelf-drop" id="shelfDrop" data-drop="shelf">把 PDF / DOCX / 图片拖到这里，挂到最近编辑的条目；或拖到下方列表行</div>
+      <div id="shelfList"></div>
     </div>
   </div>
 </section>
@@ -87,7 +123,7 @@
     <div class="sec-head">
       <span class="idx">02</span><h2>小论文</h2><span class="en">JOURNAL / CONFERENCE PAPER</span>
       <span class="grow"></span>
-      <button class="btn btn-primary btn-sm" onclick="openEditor('paper')">＋ 新建</button>
+      <button class="btn btn-primary btn-sm" data-act="edit-new" data-type="paper">＋ 新建</button>
     </div>
     <div class="list" id="list-paper"></div>
   </div>
@@ -99,7 +135,7 @@
     <div class="sec-head">
       <span class="idx">03</span><h2>大论文</h2><span class="en">THESIS / DISSERTATION</span>
       <span class="grow"></span>
-      <button class="btn btn-primary btn-sm" onclick="openEditor('thesis')">＋ 新建</button>
+      <button class="btn btn-primary btn-sm" data-act="edit-new" data-type="thesis">＋ 新建</button>
     </div>
     <div class="list" id="list-thesis"></div>
   </div>
@@ -111,7 +147,7 @@
     <div class="sec-head">
       <span class="idx">04</span><h2>专利</h2><span class="en">PATENT</span>
       <span class="grow"></span>
-      <button class="btn btn-primary btn-sm" onclick="openEditor('patent')">＋ 新建</button>
+      <button class="btn btn-primary btn-sm" data-act="edit-new" data-type="patent">＋ 新建</button>
     </div>
     <div class="list" id="list-patent"></div>
   </div>
@@ -123,8 +159,8 @@
     <div class="sec-head">
       <span class="idx">05</span><h2>软著与软件</h2><span class="en">SOFTWARE COPYRIGHT / SOFTWARE</span>
       <span class="grow"></span>
-      <button class="btn btn-ghost btn-sm" onclick="openEditor('software')">＋ 软件</button>
-      <button class="btn btn-primary btn-sm" onclick="openEditor('copyright')">＋ 软著</button>
+      <button class="btn btn-ghost btn-sm" data-act="edit-new" data-type="software">＋ 软件</button>
+      <button class="btn btn-primary btn-sm" data-act="edit-new" data-type="copyright">＋ 软著</button>
     </div>
     <h3 style="font-size:20px;font-weight:600;color:var(--t-1);padding:8px 0 4px">软件著作权</h3>
     <div class="list" id="list-copyright"></div>
@@ -166,9 +202,9 @@
       <label>分组</label>
       <select id="groupBy"><option value="type">按类别</option><option value="year">按年份</option></select>
       <span style="flex:1;min-width:8px"></span>
-      <button class="btn btn-primary btn-sm" onclick="copyResume()">复制</button>
-      <button class="btn btn-ghost btn-sm" onclick="downloadResume()">下载 .txt</button>
-      <button class="btn btn-ghost btn-sm" onclick="window.print()">打印</button>
+      <button class="btn btn-primary btn-sm" data-act="copy-resume">复制</button>
+      <button class="btn btn-ghost btn-sm" data-act="download-resume">下载 .txt</button>
+      <button class="btn btn-ghost btn-sm" data-act="print">打印</button>
     </div>
 
     <div class="resume-out" id="resumeOut"></div>
@@ -180,6 +216,7 @@
     <div class="brand">RESEARCH HUB</div>
     <p>研究生学术成果与投稿管理台 · 数据保存在本机浏览器 localStorage<br>
        建议定期点「导出」备份 JSON，换设备时用「导入」恢复。</p>
+    <button class="btn btn-danger btn-sm" data-act="reset-demo">重置为演示数据</button>
   </div>
 </footer>
 
