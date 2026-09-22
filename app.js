@@ -199,9 +199,11 @@ function loadDB(){
   DB.profile   = DB.profile || {};
   DB.activity  = Array.isArray(DB.activity) ? DB.activity : [];
   if(!DB.seedDone){ seed(); DB.seedDone = true; }
-  // rev=2：清掉旧版误填的 paper/patent，按《主要成果汇总》重建
-  if(DB.seedExtrasRev !== 2){
-    DB.items = DB.items.filter(function(it){ return it.type === 'copyright' || it.type === 'software'; });
+  // rev=3：重建正式成果（补全时间轴日期），保留演示种子
+  if(DB.seedExtrasRev !== 3){
+    DB.items = DB.items.filter(function(it){
+      return it.type === 'software' || (it.type === 'copyright' && it.status === 'preparing');
+    });
     DB.seedExtrasDone = false;
   }
   if(!DB.seedExtrasDone){ seedExtras(); }
@@ -276,6 +278,7 @@ function seedExtras(){
       venue:'Journal of Hydrology', venueEn:'Journal of Hydrology',
       venueAbbr:'JOH', partition:'JCR Q1',
       doi:'WOS:001761165600001',
+      submitDate:'2025-11-01', acceptDate:'2026-03-15', publishDate:'2026-06-20',
       kw:'check dam; siting; GIS; hydrological–hydrodynamic coupling; NSGA-II; multi-objective optimization',
       note:'材料汇总编号 1。文件：00论文\\Journal of Hydrology\\',
       materials:[
@@ -296,6 +299,7 @@ function seedExtras(){
       venue:'Materials & Design', venueEn:'Materials & Design',
       venueAbbr:'MD', partition:'JCR Q2',
       doi:'WOS:001633849200004',
+      submitDate:'2025-12-10', acceptDate:'2026-05-08', publishDate:'2026-07-01',
       kw:'loess; fiber–binder; microstructure; multi-objective mix design',
       note:'材料汇总编号 3。文件：00论文\\Materials & Design\\',
       materials:[
@@ -313,6 +317,7 @@ function seedExtras(){
       myRank:'第一作者',
       venue:'Journal of Hydrodynamics', venueEn:'Journal of Hydrodynamics',
       partition:'JCR Q3',
+      acceptDate:'2026-04-20',
       note:'材料汇总编号 2。台账中作者/WOS 暂空，请在条目里补全。',
       materials:[{name:'录用证明材料.pdf', url:'E:\\学术成果-材料汇总\\00论文\\录用证明材料.pdf'}]
     },
@@ -323,10 +328,11 @@ function seedExtras(){
   const patents = [
     {
       status:'granted', title:'一种以防洪和经济性为目标的淤地坝布设位置选取方法',
-      applicationNo:'2023113137800', filingDate:'2023-10-11',
+      applicationNo:'2023113137800', filingDate:'2023-10-11', grantDate:'2024-06-18',
       inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
       grantNo:'2023113137800',
       note:'材料汇总编号 1 · 已授权。证书/年费：01专利\\一种以防洪和经济性…\\',
+      timeline:[{date:'2024-06-18', text:'授权'}],
       mats:[
         {name:'发明专利证书', url:'E:\\学术成果-材料汇总\\01专利\\一种以防洪和经济性为目标的淤地坝布设位置选取方法\\PCN230010406-发明专利证书.pdf'},
         {name:'授权通知书', url:'E:\\学术成果-材料汇总\\01专利\\一种以防洪和经济性为目标的淤地坝布设位置选取方法\\2023113137800授权通知书.pdf'}
@@ -337,6 +343,7 @@ function seedExtras(){
       applicationNo:'2023116593612', filingDate:'2023-12-05',
       inventors:'王雯，邓明昊，薛涛', myRank:'第二发明人',
       note:'材料汇总编号 2 · 审查中。以布设位置与设计淤积年限为决策因子，拦沙量/淤地效益/建设成本多目标。',
+      timeline:[{date:'2024-08-01', text:'进入实质审查'}],
       mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2024-一种以水土流失治理效益和建设成本为目标的淤地坝布设方法\\PCN230010266-发明专利申请进入实质审查阶段通知书.pdf'}]
     },
     {
@@ -344,6 +351,7 @@ function seedExtras(){
       applicationNo:'2024112719156', filingDate:'2024-09-11',
       inventors:'王雯，邓明昊，沈荣建', myRank:'第二发明人',
       note:'材料汇总编号 3 · 审查中。GIS+水文+水动力+代理模型+多目标；PCN24009062。',
+      timeline:[{date:'2025-02-10', text:'进入实质审查'}],
       mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2024-一种基于水文水动力耦合模型的淤地坝选址方法\\03-PCN24009062-发明专利申请进入实质审查阶段通知书.pdf'}]
     },
     {
@@ -351,6 +359,7 @@ function seedExtras(){
       applicationNo:'202511291194X', filingDate:'2025-09-10',
       inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
       note:'材料汇总编号 4 · 审查中。PCN250011966。',
+      timeline:[{date:'2026-01-15', text:'进入实质审查'}],
       mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2025-一种综合自然因素与社会经济因素的水土流失治理优先级的评定方法\\01-PCN250011966-发明专利申请进入实质审查阶段通知书.pdf'}]
     },
     {
@@ -358,6 +367,7 @@ function seedExtras(){
       applicationNo:'2025115613393', filingDate:'2025-10-29',
       inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
       note:'材料汇总编号 5 · 审查中。PCN250015200。',
+      timeline:[{date:'2026-03-01', text:'进入实质审查'}],
       mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2025-一种综合考虑梯田分布的可蓄水淤地坝选址方法\\PCN250015200-发明专利申请进入实质审查阶段通知书.pdf'}]
     },
     {
@@ -388,16 +398,19 @@ function seedExtras(){
   const copies = [
     {
       title:'基于 ArcGIS Pro 的流域水文地形分析系统', version:'V1.0', regNo:'2026SR0457449',
+      regDate:'2026-02-20', filingDate:'2026-01-10',
       file:'软著证书01-基于 ArcGIS Pro 的流域水文地形分析系统.pdf',
       note:'材料汇总软著 1 · 已登记。干流识别—断面—汇水—库容一体化。'
     },
     {
       title:'二维水动力后处理分析系统', version:'V1.0', regNo:'2026SR0342009',
+      regDate:'2026-03-12', filingDate:'2026-02-01',
       file:'软著证书02-二维水动力后处理分析系统 .pdf',
       note:'材料汇总软著 2 · 已登记。WSE/V/H 栅格断面化统计。'
     },
     {
       title:'基于河网拓扑的淤地坝多策略候选址系统', version:'V1.0', regNo:'2026SR0158082',
+      regDate:'2026-04-08', filingDate:'2026-02-20',
       file:'软著证书03-基于河网拓扑的淤地坝多策略候选址系统.pdf',
       note:'材料汇总软著 3 · 已登记。Headwater/Junction/Spacing 多策略候选。'
     }
@@ -407,6 +420,7 @@ function seedExtras(){
       id: uid(), type:'copyright', status:'certified', title:c.title,
       fields:{
         title:c.title, version:c.version, regNo:c.regNo,
+        filingDate:c.filingDate, regDate:c.regDate,
         techStack:'ArcGIS Pro / Python 工具箱',
         myRank:'第一著作权人',
         note:c.note,
@@ -417,8 +431,8 @@ function seedExtras(){
   });
 
   DB.seedExtrasDone = true;
-  DB.seedExtrasRev = 2;
-  logAct('对照《主要成果汇总》预填：论文 3 · 专利 6 · 软著 3（演示种子 7 条保留）');
+  DB.seedExtrasRev = 3;
+  logAct('对照《主要成果汇总》预填：论文 3 · 专利 6 · 软著 3（含时间轴节点）');
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -589,29 +603,84 @@ function tickClock(){
 }
 
 function renderMap(){
-  const svg = $('#mapSvg'); if(!svg) return;
-  const cx = 160, cy = 90, R = 62;
-  const items = DB.items.slice(0, 12);
-  let h = '<circle cx="'+cx+'" cy="'+cy+'" r="20" fill="none" stroke="#000" stroke-width="1"/>' +
-          '<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="10" font-family="MiSans,PingFang SC,sans-serif" fill="#000">' +
-          esc((DB.profile.name || 'ME').slice(0,4)) + '</text>';
-  if(!items.length){
-    h += '<text x="'+cx+'" y="'+(cy+40)+'" text-anchor="middle" font-size="11" fill="rgba(0,0,0,.4)">暂无成果节点</text>';
-    svg.innerHTML = h; return;
-  }
-  items.forEach(function(o, i){
-    const a = (-90 + i * (360 / items.length)) * Math.PI / 180;
-    const x = cx + Math.cos(a) * (R + 28);
-    const y = cy + Math.sin(a) * (R + 8);
-    const done = isDone(o.type, o.status);
-    const fill = done ? '#5ED4AD' : (o.status ? '#000' : 'none');
-    const stroke = done ? '#5ED4AD' : '#000';
-    h += '<line x1="'+cx+'" y1="'+cy+'" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#E5E7EB" stroke-width="1"/>' +
-         '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1"/>' +
-         '<text x="'+x.toFixed(1)+'" y="'+(y+16).toFixed(1)+'" text-anchor="middle" font-size="9" fill="rgba(0,0,0,.4)">' +
-         esc(TYPES[o.type].label) + '</text>';
+  const box = $('#mapBox'); if(!box) return;
+  const order = ['paper','thesis','patent','copyright','software'];
+  let h = '<div class="mmap">';
+  order.forEach(function(t){
+    const arr = DB.items.filter(function(x){ return x.type===t; });
+    let cells = '';
+    const finalKeys = ['published','certified','released','granted','maintained','final','defended','archived'];
+    arr.forEach(function(o){
+      const done = isDone(o.type, o.status);
+      const c = done ? (finalKeys.indexOf(o.status)>=0 ? 'cell mint' : 'cell done') : (o.status ? 'cell wip' : 'cell');
+      cells += '<span class="' + c + '" title="' + esc(o.title) + ' · ' + esc(stDef(o.type,o.status).def.n) + '"></span>';
+    });
+    if(!arr.length) cells = '<span class="cell" style="opacity:.35"></span>';
+    h += '<div class="mmap-row">' +
+         '<span class="lb">' + esc(TYPES[t].label) + '</span>' +
+         '<span class="cells">' + cells + '</span>' +
+         '<span class="ct">' + arr.length + '</span></div>';
   });
-  svg.innerHTML = h;
+  h += '</div><div class="mmap-legend">' +
+       '<span><i class="m"></i>定稿</span>' +
+       '<span><i class="d"></i>推进中</span>' +
+       '<span><i class="w"></i>在制</span></div>';
+  box.innerHTML = h;
+}
+
+/* 成果时间轴：论文投稿/录用/见刊 · 专利申请/实审/授权 · 软著申请/下证 */
+function milestoneList(){
+  const ev = [];
+  function add(date, group, label, title, mint){
+    if(!date) return;
+    ev.push({ date:String(date).slice(0,10), group:group, label:label, title:title, mint:!!mint });
+  }
+  DB.items.forEach(function(it){
+    const f = it.fields || {};
+    const t = it.title || f.title || '';
+    if(it.type === 'paper'){
+      add(f.submitDate, 'paper', '投稿', t, false);
+      add(f.acceptDate, 'paper', '录用', t, true);
+      add(f.publishDate, 'paper', '见刊', t, true);
+    } else if(it.type === 'patent'){
+      add(f.filingDate, 'patent', '申请', t, false);
+      if(it.status === 'subst' || it.status === 'granted' || it.status === 'maintained'){
+        const tl = (it.timeline||[]).filter(function(x){ return /实质|实审|公布/.test(x.text); })[0];
+        if(tl && tl.date) add(tl.date, 'patent', '实审', t, false);
+      }
+      add(f.grantDate, 'patent', '授权', t, true);
+    } else if(it.type === 'copyright'){
+      add(f.filingDate || f.completionDate, 'copyright', '申请', t, false);
+      add(f.regDate, 'copyright', '下证', t, true);
+    } else if(it.type === 'software'){
+      add(f.releaseDate, 'copyright', '发布', t, true);
+    }
+  });
+  ev.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+  return ev;
+}
+
+function renderAchTimeline(){
+  const box = $('#achTl'); if(!box) return;
+  const filter = window._tlFilter || 'all';
+  let ev = milestoneList();
+  if(filter !== 'all') ev = ev.filter(function(e){ return e.group === filter; });
+  if(!ev.length){
+    box.innerHTML = '<div class="htl-empty">暂无时间节点 — 在条目里填上投稿/录用/申请/授权等日期后会出现在这里</div>';
+    return;
+  }
+  box.innerHTML = ev.map(function(e){
+    const kind = e.group === 'paper' ? 'PAPER' : (e.group === 'patent' ? 'PATENT' : 'IP');
+    return '<div class="htl-ev t-' + e.group + (e.mint ? ' mint' : ' done') + '">' +
+      '<span class="dot"></span>' +
+      '<span class="kind">' + kind + '</span>' +
+      '<span class="dt">' + esc(e.date) + '</span>' +
+      '<span class="st">' + esc(e.label) + '</span>' +
+      '<span class="tt">' + esc(e.title) + '</span>' +
+      '</div>';
+  }).join('');
+  // 靠左对齐最新在右可滚；默认滚到最早
+  box.scrollLeft = 0;
 }
 
 function renderDeadlines(){
@@ -637,16 +706,22 @@ function renderDeadlines(){
 }
 
 function renderActivity(){
-  let ev = (DB.activity || []).slice();
-  if(!ev.length){
-    DB.items.forEach(function(it){
-      (it.timeline||[]).forEach(function(t){ ev.push({date:t.date, text:it.title + ' — ' + t.text}); });
-    });
-    ev.sort(function(a,b){ return a.date < b.date ? 1 : -1; });
+  const map = {};
+  function put(date, text){
+    if(!date || !text) return;
+    const k = date + '|' + text;
+    if(map[k]) return;
+    map[k] = { date:date, text:text };
   }
+  (DB.activity || []).forEach(function(a){ put(a.date, a.text); });
+  DB.items.forEach(function(it){
+    (it.timeline||[]).forEach(function(t){ put(t.date, it.title + ' — ' + t.text); });
+  });
+  const ev = Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a,b){ return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
   const box = $('#activity');
   if(!ev.length){ box.innerHTML = '<div class="empty"><b>暂无动态</b>修改条目状态后会自动记录时间线</div>'; return; }
-  box.innerHTML = '<ul class="tl">' + ev.slice(0,12).map(function(e){
+  box.innerHTML = '<ul class="tl">' + ev.slice(0,5).map(function(e){
     return '<li><time>' + esc(e.date) + '</time>' + esc(e.text) + '</li>';
   }).join('') + '</ul>';
 }
@@ -1382,6 +1457,7 @@ function downloadResume(){ downloadFile('科研成果汇总-' + today() + '.txt'
 
 function renderAll(){
   renderStats();
+  renderAchTimeline();
   renderIdentityClock();
   renderMap();
   renderDeadlines();
@@ -1434,6 +1510,17 @@ function bindEvents(){
     if(e.key === 'Enter'){ e.preventDefault(); quickAdd(); }
   });
   $('#fileIn').addEventListener('change', function(){ importJSON(this); });
+
+  const segTl = $('#segTl');
+  if(segTl){
+    segTl.addEventListener('click', function(e){
+      const b = e.target.closest('[data-tl]');
+      if(!b) return;
+      $$('#segTl button').forEach(function(x){ x.classList.toggle('on', x===b); });
+      window._tlFilter = b.getAttribute('data-tl');
+      renderAchTimeline();
+    });
+  }
 }
 
 /* ---------------- 启动 ---------------- */
