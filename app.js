@@ -186,7 +186,7 @@ let DB = null;
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function today(){ return new Date().toISOString().slice(0,10); }
 
-function blank(){ return { version:1, items:[], deadlines:[], profile:{}, activity:[], seedDone:false }; }
+function blank(){ return { version:1, items:[], deadlines:[], profile:{}, activity:[], seedDone:false, seedExtrasDone:false }; }
 
 function loadDB(){
   try{
@@ -199,6 +199,8 @@ function loadDB(){
   DB.profile   = DB.profile || {};
   DB.activity  = Array.isArray(DB.activity) ? DB.activity : [];
   if(!DB.seedDone){ seed(); DB.seedDone = true; }
+  if(!DB.seedExtrasDone){ seedExtras(); }
+  if(!DB.profile.name && !DB.profile.nameEn){ DB.profile.name = '邓明昊'; DB.profile.nameEn = 'Minghao Deng'; }
   save();
 }
 
@@ -249,6 +251,141 @@ function seed(){
     },
     timeline:[{date:today(), text:'建立条目 · 状态「已发布」'}]
   }));
+}
+
+/* 真实成果预填（论文 / 专利）：不改动上方 7 条演示种子 */
+function seedExtras(){
+  const base = { timeline:[], materials:[], createdAt:today(), updatedAt:today() };
+  function push(o){ DB.items.push(Object.assign({}, base, o)); }
+
+  /* ---- 小论文 ---- */
+  push({
+    id: uid(), type:'paper', status:'ready', title:'考虑坝系级联效应的流域淤地坝坝址识别与工程参数动态评价',
+    fields:{
+      title:'考虑坝系级联效应的流域淤地坝坝址识别与工程参数动态评价',
+      authors:'邓明昊, 等', myRank:'第一作者',
+      venue:'中国水土保持科学', year:2026,
+      kw:'淤地坝；坝系级联；坝址识别；工程参数；动态评价',
+      note:'中文投稿层 V5；只用评价层数据（A0/A(B)、HV 扣减、参考配置对照），Greedy/敏感性/鲁棒性留给英文稿。备选：水土保持研究 V4。',
+      materials:[
+        {name:'中文定稿 V5', url:'E:\\MIMO\\科研工作\\中国水土保持科学_淤地坝动态评价投稿\\稿件\\考虑坝系级联效应的流域淤地坝坝址识别与工程参数动态评价_中国水土保持科学V5.docx'},
+        {name:'备用稿（水土保持研究 V4）', url:'E:\\MIMO\\科研工作\\中国水土保持科学_淤地坝动态评价投稿\\稿件\\水土保持研究投稿稿V4_备用.docx'}
+      ]
+    },
+    timeline:[{date:today(), text:'建立条目 · 状态「待投稿」· 中文稿 V5'}]
+  });
+  push({
+    id: uid(), type:'paper', status:'writing', title:'考虑坝系级联效应的拦沙导向型流域淤地坝布设框架（CCML）',
+    fields:{
+      title:'考虑坝系级联效应的拦沙导向型流域淤地坝布设框架（CCML）',
+      titleEn:'Cascade-corrected marginal-retention layout of check dams for sediment interception',
+      authors:'邓明昊, 等', authorsEn:'M. Deng, et al.', myRank:'第一作者',
+      venue:'International Soil and Water Conservation Research', venueAbbr:'ISWCR',
+      venueEn:'International Soil and Water Conservation Research',
+      partition:'SCI 收录',
+      kw:'check dam; cascade effect; sediment retention; multi-objective layout; CCML',
+      note:'方法名 CCML。杨家沟 UAV DEM 0.11 m；候选 291 → 入选 14；拦沙 88.02×10⁴ m³ / 造价 360.54 万元。与 JOH (Deng et al. 2026) 连续 (S,H)+NSGA-II 边界：本文离散坝系级联边际拦沙。投稿前：MathType、终图 300dpi、双盲 title page、APC 约 2000 USD。',
+      materials:[
+        {name:'英文主稿 v3', url:'E:\\MIMO\\科研工作\\Paper5_ISWCR_坝系级联拦沙布设\\02_英文投稿层\\04_Full_Manuscript_v3.docx'},
+        {name:'中文主稿 v3', url:'E:\\MIMO\\科研工作\\Paper5_ISWCR_坝系级联拦沙布设\\01_中文定稿层\\04_全文校核稿_v3.docx'}
+      ]
+    },
+    timeline:[{date:today(), text:'建立条目 · 状态「写作中」· 英文稿 v3 / 目标 ISWCR'}]
+  });
+  push({
+    id: uid(), type:'paper', status:'published', title:'基于水文水动力耦合模型的淤地坝选址多目标优化研究',
+    fields:{
+      title:'基于水文水动力耦合模型的淤地坝选址多目标优化研究',
+      authors:'邓明昊, 等', myRank:'第一作者',
+      venue:'Journal of Hydrology', venueAbbr:'JOH',
+      venueEn:'Journal of Hydrology', partition:'JCR Q1', year:2026,
+      note:'Deng et al. 2026（JOH）。与 Paper5/CCML 边界：本文连续 (S,H)+水文水动力+NSGA-II 多目标。若正式题录/DOI 有出入请在条目里改。',
+      materials:[{name:'专利关联稿（同题研究）', url:'D:\\OneDrive\\02学校数据\\00专利文件\\一种基于水文水动力耦合模型的淤地坝选址方法24.6.18\\基于水文水动力耦合模型的淤地坝选址多目标优化研究_邓明昊_2024.6.19修改版.docx'}]
+    },
+    timeline:[{date:today(), text:'建立条目 · 状态「见刊」· JOH 2026（题录以最终出版为准）'}]
+  });
+
+  /* ---- 专利 ---- */
+  const patents = [
+    {
+      status:'granted', title:'一种以防洪和经济性为目标的淤地坝布设位置选取方法',
+      applicationNo:'', note:'P1 · 已授权。决策变量 (S,H)；目标：洪峰削减最大、建设成本最小。发明人变更材料在专利文件夹。',
+      filingDate:'2023-01-01', timelineText:'建立条目 · 状态「已授权」· P1'
+    },
+    {
+      status:'subst', title:'一种以淤积效益和建设成本为目标的淤地坝布设位置的多目标优化方法',
+      applicationNo:'PCN230010266', note:'P2 · 实质审查。决策变量 (S,N 设计淤积年限)；MOPSO；拦沙/淤地效益—成本。',
+      filingDate:'2023-09-08', timelineText:'建立条目 · 状态「实质审查」· P2 / PCN230010266'
+    },
+    {
+      status:'subst', title:'一种以削减洪峰和建设成本为目标的淤地坝布设位置的多目标优化方法',
+      applicationNo:'PCN230010406', note:'与 P1 同族/近名，代理案卷 PCN230010406，实审中。请与 P1 权利要求边界核对后合并或保留。',
+      filingDate:'2023-08-27', timelineText:'建立条目 · 状态「实质审查」· PCN230010406'
+    },
+    {
+      status:'subst', title:'一种以水土流失治理效益和建设成本为目标的淤地坝布设方法',
+      applicationNo:'', note:'有发明人变更声明。目标：治理效益—建设成本。',
+      timelineText:'建立条目 · 状态「实质审查」· 治理效益—成本'
+    },
+    {
+      status:'subst', title:'一种基于水文水动力耦合模型的淤地坝选址方法',
+      applicationNo:'PCN24009062', note:'P3 · 实审 + 已公布。S1 地形 → 水文 → 水动力 → 响应面 Qi=f(S,H) → 多目标 (成本/运营/防洪)。',
+      filingDate:'2024-06-18', timelineText:'建立条目 · 状态「实质审查」· P3 / PCN24009062'
+    },
+    {
+      status:'subst', title:'一种综合考虑梯田分布的可蓄水淤地坝选址方法',
+      applicationNo:'PCN250015200', note:'P4 · 实审。可蓄水+灌溉；梯田指标 At；坝体+灌溉系统成本 vs 灌溉效益；含建设顺序。',
+      filingDate:'2025-01-01', timelineText:'建立条目 · 状态「实质审查」· P4 / PCN250015200'
+    },
+    {
+      status:'subst', title:'一种评定流域水土流失治理等级的方法',
+      applicationNo:'PCN250011966', note:'P5 · 实审。自然侵蚀+社会经济；AHP+熵权+TOPSIS 治理优先级。',
+      filingDate:'2025-01-01', timelineText:'建立条目 · 状态「实质审查」· P5 / PCN250011966'
+    },
+    {
+      status:'accepted', title:'一种基于多指标评价的固化黄土配比确定方法',
+      applicationNo:'PCN260012426', note:'P6 · 已受理。水泥/纤维/固化剂；BBD+响应面+多目标+AHP熵权评价。',
+      filingDate:'2026-05-14', timelineText:'建立条目 · 状态「已受理」· P6 / PCN260012426'
+    },
+    {
+      status:'drafting', title:'一种考虑坝系级联效应的流域淤地坝优化布设方法',
+      applicationNo:'', note:'P7 · 撰写中。与 Paper5/CCML 同源：级联修正坝控面积/有效库容 + Greedy/二次搜索。与 P8 拆清边界。',
+      filingDate:'2026-09-03', timelineText:'建立条目 · 状态「撰写中」· P7 级联效应'
+    },
+    {
+      status:'drafting', title:'一种面向流域坝系规划的淤地坝优化布局与规模确定方法',
+      applicationNo:'', note:'P8 · 撰写中。规划全流程：候选→约束→参数→成本效益→数据库→离散「坝址×规模」组合优化。',
+      timelineText:'建立条目 · 状态「撰写中」· P8 规划流程'
+    },
+    {
+      status:'idea', title:'一种基于新指标的流域淤地坝适宜布设点位快速搜寻方法',
+      applicationNo:'', note:'P9 · 选题中，名称仍在敲定。需先定义新指标计算式与效果证据，否则新颖性偏弱。',
+      timelineText:'建立条目 · 状态「创意」· P9 新指标搜寻'
+    },
+    {
+      status:'drafting', title:'一种考虑坝系级联影响的淤地坝高程—有效库容计算方法',
+      applicationNo:'', note:'技术交底书 v1 已有（Paper5 专利线）。高程层差值扣减级联有效库容。',
+      timelineText:'建立条目 · 状态「撰写中」· 级联有效库容交底书'
+    }
+  ];
+  patents.forEach(function(p){
+    push({
+      id: uid(), type:'patent', status:p.status, title:p.title,
+      fields:{
+        title:p.title, patentType:'发明专利',
+        applicationNo:p.applicationNo || '',
+        applicants:'西安理工大学',
+        inventors:'邓明昊, 等', myRank:'第一发明人',
+        filingDate:p.filingDate || '',
+        note:p.note,
+        materials:[{name:'专利材料目录', url:'D:\\OneDrive\\02学校数据\\00专利文件'}]
+      },
+      timeline:[{date:today(), text:p.timelineText}]
+    });
+  });
+
+  DB.seedExtrasDone = true;
+  logAct('预填真实论文 3 篇 + 专利 12 项（演示种子保留）');
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -937,7 +1074,8 @@ function resetDemo(){
   if(!confirm('重置会覆盖当前全部数据，建议先导出备份。确定重置为演示数据？')) return;
   DB = blank();
   seed(); DB.seedDone = true;
-  logAct('重置为演示数据');
+  seedExtras();
+  logAct('重置为演示数据（含真实论文/专利预填）');
   save(); renderAll();
   toast('已重置为演示数据', 'back');
 }
