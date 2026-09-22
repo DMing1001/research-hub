@@ -18,14 +18,14 @@
 <!-- ══════════ 导航 56px ══════════ -->
 <nav class="nav">
   <div class="nav-in">
-    <a class="brand" href="#top">RESEARCH HUB<span>学术成果管理台</span></a>
+    <a class="brand" href="#" data-act="view" data-view="dash">RESEARCH HUB<span>学术成果管理台</span></a>
     <div class="nav-links">
-      <a href="#dash">总览</a>
-      <a href="#paper">小论文</a>
-      <a href="#thesis">大论文</a>
-      <a href="#patent">专利</a>
-      <a href="#ip">软著与软件</a>
-      <a href="#resume">简历墙</a>
+      <a href="#" data-act="view" data-view="dash" class="on">总览</a>
+      <a href="#" data-act="view" data-view="paper">小论文</a>
+      <a href="#" data-act="view" data-view="thesis">大论文</a>
+      <a href="#" data-act="view" data-view="patent">专利</a>
+      <a href="#" data-act="view" data-view="ip">软著与软件</a>
+      <a href="#" data-act="view" data-view="resume">简历墙</a>
     </div>
     <div class="nav-right">
       <button class="btn btn-ghost btn-sm" data-act="export">导出</button>
@@ -35,17 +35,17 @@
   </div>
 </nav>
 <div class="drawer" id="drawer">
-  <a href="#dash" data-act="drawer">总览</a>
-  <a href="#paper" data-act="drawer">小论文</a>
-  <a href="#thesis" data-act="drawer">大论文</a>
-  <a href="#patent" data-act="drawer">专利</a>
-  <a href="#ip" data-act="drawer">软著与软件</a>
-  <a href="#resume" data-act="drawer">简历墙</a>
+  <a href="#" data-act="view" data-view="dash">总览</a>
+  <a href="#" data-act="view" data-view="paper">小论文</a>
+  <a href="#" data-act="view" data-view="thesis">大论文</a>
+  <a href="#" data-act="view" data-view="patent">专利</a>
+  <a href="#" data-act="view" data-view="ip">软著与软件</a>
+  <a href="#" data-act="view" data-view="resume">简历墙</a>
 </div>
 <input type="file" id="fileIn" accept="application/json,.json" style="display:none" data-act="import-file">
 
-<!-- ══════════ Hero ══════════ -->
-<header class="hero" id="top">
+<!-- ══════════ Hero（仅总览）══════════ -->
+<header class="hero view-hero on" id="top" data-view="dash">
   <div class="hero-bg" id="heroBg"></div>
   <div class="hero-in">
     <h1>HELLO, RESEARCHER</h1>
@@ -55,7 +55,7 @@
 </header>
 
 <!-- ══════════ 01 总览 ══════════ -->
-<section id="dash">
+<section id="dash" class="view on" data-view="dash">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">01</span>
@@ -112,7 +112,7 @@
 </section>
 
 <!-- ══════════ 02 小论文 ══════════ -->
-<section id="paper">
+<section id="paper" class="view" data-view="paper">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">02</span><h2>小论文</h2><span class="en">JOURNAL / CONFERENCE PAPER</span>
@@ -124,7 +124,7 @@
 </section>
 
 <!-- ══════════ 03 大论文 ══════════ -->
-<section id="thesis">
+<section id="thesis" class="view" data-view="thesis">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">03</span><h2>大论文</h2><span class="en">THESIS / DISSERTATION</span>
@@ -136,7 +136,7 @@
 </section>
 
 <!-- ══════════ 04 专利 ══════════ -->
-<section id="patent">
+<section id="patent" class="view" data-view="patent">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">04</span><h2>专利</h2><span class="en">PATENT</span>
@@ -148,7 +148,7 @@
 </section>
 
 <!-- ══════════ 05 软著与软件 ══════════ -->
-<section id="ip">
+<section id="ip" class="view" data-view="ip">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">05</span><h2>软著与软件</h2><span class="en">SOFTWARE COPYRIGHT / SOFTWARE</span>
@@ -164,7 +164,7 @@
 </section>
 
 <!-- ══════════ 06 简历墙 ══════════ -->
-<section id="resume">
+<section id="resume" class="view" data-view="resume">
   <div class="wrap">
     <div class="sec-head">
       <span class="idx">06</span><h2>简历墙</h2><span class="en">CV READY OUTPUT</span>
