@@ -77,6 +77,20 @@
       <button class="btn btn-primary btn-sm" data-act="quick-add">录入</button>
     </div>
     <div class="stats" id="stats"></div>
+
+    <div class="panel-t" style="margin-top:28px">成果时间轴 <span class="en">TIMELINE</span></div>
+    <div class="tl-bar">
+      <div class="seg" id="segTl">
+        <button class="on" data-tl="all">全部</button>
+        <button data-tl="paper">论文</button>
+        <button data-tl="patent">专利</button>
+        <button data-tl="copyright">软著</button>
+      </div>
+    </div>
+    <div class="htl-wrap">
+      <div class="htl" id="achTl"></div>
+    </div>
+
     <div class="idrow">
       <div class="idcard">
         <div class="label">Researcher</div>
@@ -91,7 +105,7 @@
       </div>
       <div class="mapcard">
         <div class="label">成果图谱 / Map</div>
-        <svg id="mapSvg" viewBox="0 0 320 180" width="100%" height="150" aria-label="成果图谱"></svg>
+        <div id="mapBox"></div>
       </div>
     </div>
     <div class="cols">
@@ -104,7 +118,7 @@
         </div>
       </div>
       <div>
-        <div class="panel-t">最近动态 · 时间线</div>
+        <div class="panel-t">最近动态 <span class="caption">（5 条）</span></div>
         <div id="activity"></div>
       </div>
     </div>
