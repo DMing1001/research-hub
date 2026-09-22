@@ -658,6 +658,19 @@ function renderMap(){
 }
 
 /* 成果关键节点：论文投稿/录用/见刊 · 专利申请/实审/授权 · 软著申请/下证 */
+/* 竖排日期：2023 / 10 / 11（补零） */
+function dateStackHTML(date){
+  if(!date) return '<span class="dt-stack"><span class="y">—</span></span>';
+  const p = String(date).slice(0,10).split('-');
+  if(p.length < 3) return '<span class="dt-stack"><span class="md">' + esc(date) + '</span></span>';
+  const y = p[0], m = String(p[1]).padStart(2,'0'), d = String(p[2]).padStart(2,'0');
+  return '<span class="dt-stack">' +
+    '<span class="y">' + esc(y) + '</span>' +
+    '<span class="md">' + esc(m) + '</span>' +
+    '<span class="md">' + esc(d) + '</span>' +
+    '</span>';
+}
+
 function itemMilestones(it){
   const f = it.fields || {};
   const out = [];
@@ -734,7 +747,7 @@ function renderAchTimeline(){
       else cls += ' plan';
       return '<div class="' + cls + '">' +
         '<div class="top">' +
-          '<span class="dt">' + esc(n.date || '·') + '</span>' +
+          dateStackHTML(n.date) +
           '<span class="ev">' + esc(n.label) + '</span>' +
         '</div>' +
         '<span class="stem"></span><span class="dot"></span>' +
@@ -777,7 +790,7 @@ function renderAchTimeline(){
     const cls = 'tl-node ' + (e.mint ? 'mint' : (e.soft ? 'plan' : 'done'));
     return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" title="' + esc(e.it.title) + '">' +
       '<div class="top">' +
-        '<span class="dt">' + esc(e.date || '—') + '</span>' +
+        dateStackHTML(e.date) +
         '<span class="ev">' + esc(e.label) + '</span>' +
       '</div>' +
       '<span class="stem"></span><span class="dot"></span>' +
