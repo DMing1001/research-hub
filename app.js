@@ -544,9 +544,11 @@ function renderHeroBg(){
   const unit = 'RESEARCH · ';
   let txt = ''; for(let i=0;i<18;i++) txt += unit;
   let h = '';
-  for(let i=0;i<7;i++){
+  // 仅 2 行底字，极慢横移（约 2.5–3 分钟一轮）
+  for(let i=0;i<2;i++){
+    const dur = (i === 0) ? 150 : 180;
     h += '<div class="mq' + (i%2 ? ' rev' : '') + '" style="animation:none">' +
-         '<span style="animation-duration:' + (34 + i*5) + 's">' + txt + txt + '</span></div>';
+         '<span style="animation-duration:' + dur + 's">' + txt + txt + '</span></div>';
   }
   $('#heroBg').innerHTML = h;
 }
