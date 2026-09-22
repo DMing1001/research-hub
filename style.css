@@ -248,50 +248,85 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .clock-date{ font-size:13px; color:var(--t-5); margin-top:6px; }
 #mapSvg{ display:block; }
 
-/* ---------- 成果时间轴（横向） ---------- */
+/* ---------- 成果时间轴（一根线 · 总轴 / 单项轴） ---------- */
 .tl-bar{ display:flex; align-items:center; gap:var(--sp-4); padding:0 0 var(--sp-4); }
 .panel-t .en{ font-size:12px; font-weight:400; color:var(--t-5); letter-spacing:1px; margin-left:var(--sp-3); }
 .panel-t .caption{ font-size:12px; font-weight:400; color:var(--t-6); }
-.htl-wrap{
+
+.tl-stage{
   border-top:1px solid var(--line); border-bottom:1px solid var(--line-2);
-  overflow-x:auto; overflow-y:hidden; margin-bottom:var(--sp-6);
-  -webkit-overflow-scrolling:touch;
+  margin-bottom:var(--sp-6); padding:var(--sp-6) 0 var(--sp-5);
+  overflow-x:auto; overflow-y:hidden;
 }
-.htl{
-  display:flex; align-items:stretch; min-width:max-content;
-  padding:var(--sp-6) 0 var(--sp-5); position:relative;
+.tl-line{
+  position:relative; min-width:max-content; padding:28px 24px 8px;
 }
-.htl::before{
-  content:''; position:absolute; left:0; right:0; top:calc(var(--sp-6) + 18px);
-  height:1px; background:var(--line-2);
+.tl-line::before{
+  content:''; position:absolute; left:24px; right:24px; top:40px; height:1px; background:var(--t-1);
 }
-.htl-ev{
-  position:relative; width:132px; flex:none; padding:0 var(--sp-3);
-  display:flex; flex-direction:column; align-items:flex-start; gap:6px;
+.tl-nodes{
+  display:flex; align-items:flex-start; gap:0; position:relative;
 }
-.htl-ev .dot{
+.tl-node{
+  position:relative; width:150px; flex:none; padding:0 8px;
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  cursor:pointer; transition:opacity .15s ease;
+}
+.tl-node:hover{ opacity:.7; }
+.tl-node .stem{
+  width:1px; height:14px; background:var(--line-2); order:2;
+}
+.tl-node .dot{
   width:9px; height:9px; border:1px solid var(--t-1); background:var(--bg);
-  margin-left:2px; z-index:1;
+  order:3; margin-top:-5px; z-index:1;
 }
-.htl-ev.done .dot{ background:var(--t-1); }
-.htl-ev.mint .dot{ background:var(--mint); border-color:var(--mint); }
-.htl-ev .dt{
-  font-size:12px; color:var(--t-6); font-variant-numeric:tabular-nums; letter-spacing:.2px;
+.tl-node.done .dot{ background:var(--t-1); }
+.tl-node.mint .dot{ background:var(--mint); border-color:var(--mint); }
+.tl-node .top{
+  order:1; margin-bottom:2px; min-height:36px;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
 }
-.htl-ev .st{
-  font-size:13px; font-weight:600; color:var(--t-1); line-height:1.3;
+.tl-node .dt{
+  font-size:12px; color:var(--t-6); font-variant-numeric:tabular-nums;
 }
-.htl-ev .tt{
-  font-size:12px; color:var(--t-4); line-height:1.45;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+.tl-node .ev{
+  font-size:13px; font-weight:600; color:var(--t-1); line-height:1.25;
 }
-.htl-ev.t-paper .st{ color:var(--t-1); }
-.htl-ev .kind{
+.tl-node .bot{
+  order:4; margin-top:8px; width:100%;
+}
+.tl-node .kind{
   font-size:10px; letter-spacing:.8px; color:var(--t-6); text-transform:uppercase;
 }
-.htl-empty{
-  padding:var(--sp-8) var(--sp-4); color:var(--t-5); font-size:14px; width:100%;
+.tl-node .tt{
+  font-size:12px; color:var(--t-4); line-height:1.4; margin-top:2px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
+.tl-empty{
+  padding:var(--sp-8) var(--sp-4); color:var(--t-5); font-size:14px; text-align:center;
+}
+
+/* 单项轴 */
+.tl-item-head{
+  display:flex; align-items:baseline; gap:var(--sp-4); flex-wrap:wrap;
+  padding:0 24px var(--sp-4); max-width:none;
+}
+.tl-item-head .back{
+  font-size:13px; color:var(--t-4); border-bottom:1px solid var(--line-2); padding-bottom:1px;
+}
+.tl-item-head .back:hover{ color:var(--t-1); border-color:var(--t-1); opacity:1; }
+.tl-item-head .nm{
+  font-size:18px; font-weight:600; color:var(--t-1); flex:1; min-width:200px;
+}
+.tl-item-head .tag{ flex:none; }
+.tl-line.item-mode{ padding-top:20px; }
+.tl-line.item-mode::before{ top:32px; }
+.tl-node.plan .dot{ background:var(--bg); border-style:dashed; border-color:var(--t-5); }
+.tl-node.plan .ev{ color:var(--t-5); font-weight:500; }
+.tl-prog{
+  padding:0 24px var(--sp-2); display:flex; align-items:center; gap:var(--sp-4);
+}
+.tl-prog .lb{ font-size:12px; color:var(--t-6); letter-spacing:.4px; flex:none; }
 
 /* ---------- 成果图谱矩阵 ---------- */
 .mmap{ display:flex; flex-direction:column; gap:10px; }
