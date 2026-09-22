@@ -660,7 +660,8 @@ function renderWipList(){
       return al - bl;
     });
   if(!arr.length){
-    box.innerHTML = '<div class="empty"><b>没有在写条目</b>定稿/授权/下证之外的成果会出现在这里</div>';
+    box.innerHTML = '<div class="empty"><b>没有在写条目</b>定稿/授权/下证之外、且已进入撰写的成果会出现在这里' +
+      '<div><button class="btn btn-ghost btn-sm" data-act="edit-new" data-type="paper">＋ 新建小论文</button></div></div>';
     return;
   }
   box.innerHTML = arr.map(function(row){
@@ -744,6 +745,7 @@ function renderMap(){
       h += '<div class="mstat-chip' + (b.mint ? ' mint' : '') + '"' +
            ' data-act="map-filter" data-type="' + row.type + '"' +
            ' data-keys="' + esc(keys) + '" data-label="' + esc(b.k) + '"' +
+           ' tabindex="0" role="button"' +
            ' title="查看「' + esc(row.label + ' · ' + b.k) + '」列表">' +
            '<span class="k">' + esc(b.k) + '</span>' +
            '<span class="n">' + n + '</span>' +
@@ -886,7 +888,7 @@ function renderAchTimeline(){
   const kindOf = function(g){ return g==='paper' ? 'PAPER' : (g==='patent' ? 'PATENT' : 'IP'); };
   box.innerHTML = '<div class="tl-line"><div class="tl-nodes">' + ev.map(function(e){
     const cls = 'tl-node ' + (e.mint ? 'mint' : (e.soft ? 'plan' : 'done'));
-    return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" title="' + esc(e.it.title) + '">' +
+    return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" tabindex="0" role="button" title="' + esc(e.it.title) + '">' +
       '<div class="top">' +
         dateStackHTML(e.date) +
         '<span class="ev">' + esc(e.label) + '</span>' +
@@ -904,7 +906,8 @@ function renderDeadlines(){
   const list = DB.deadlines.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
   const box = $('#deadlines');
   if(!list.length){
-    box.innerHTML = '<div class="empty"><b>还没有时间节点</b>添加截稿日、答辩日、答复期限，这里会自动倒计时</div>';
+    box.innerHTML = '<div class="empty"><b>还没有时间节点</b>添加截稿日、答辩日、答复期限，这里会自动倒计时' +
+      '<div><button class="btn btn-primary btn-sm" data-act="deadline-new">＋ 添加节点</button></div></div>';
     return;
   }
   let h = '';
@@ -1038,7 +1041,8 @@ function renderList(type){
   }
   if(!arr.length){
     box.innerHTML = pill + '<div class="empty"><b>暂无' + TYPES[type].label + '条目</b>' +
-      (active ? '当前筛选条件下没有结果，点「显示全部」' : '点右上角「＋ 新建」或用上方快速录入') + '</div>';
+      (active ? '当前筛选条件下没有结果，点「显示全部」' : '开始记录你的第一条' + TYPES[type].label) +
+      '<div><button class="btn btn-primary btn-sm" data-act="edit-new" data-type="' + type + '">＋ 新建' + TYPES[type].label + '</button></div></div>';
     return;
   }
   let h = pill;
@@ -1220,19 +1224,35 @@ function openEditor(type, id){
   const it = id ? DB.items.filter(function(x){ return x.id===id; })[0] : null;
   const T = TYPES[type];
   const f = it ? (it.fields||{}) : {};
+  const TIME_KEYS = ['submitDate','acceptDate','publishDate','filingDate','pubDate','grantDate','completionDate','regDate','releaseDate','planDate','year','nextAction'];
   let h = '<div class="mh"><h3>' + (it ? '编辑' : '新建') + T.label + '</h3>' +
           '<span class="en">' + T.en + '</span>' +
           '<button data-act="close-modal" aria-label="关闭">×</button></div>' +
           '<div class="grid2">';
 
-  // 状态 + 标题（标题在 fields 里，这里先放状态选择）
+  h += '<div class="form-sec">基本信息</div>';
   h += '<div class="field"><label>当前状态</label><select data-k="__status">' +
        T.statuses.map(function(s){
          return '<option value="' + s.k + '"' + (s.k === (it?it.status:'') ? ' selected' : '') + '>' + esc(s.n) + '</option>';
        }).join('') + '</select></div>';
   h += '<div class="field"><label>记录创建</label><input data-k="__createdAt" type="date" value="' + esc(it ? (it.createdAt||today()) : today()) + '"></div>';
+  T.fields.forEach(function(fd){
+    if(fd.t === 'rows' || TIME_KEYS.indexOf(fd.k) >= 0) return;
+    if(fd.k === 'nextAction' || fd.k === 'planDate') return;
+    h += fieldHTML(fd, f[fd.k]);
+  });
 
-  T.fields.forEach(function(fd){ h += fieldHTML(fd, f[fd.k]); });
+  h += '<div class="form-sec">流程与时间</div>';
+  T.fields.forEach(function(fd){
+    if(TIME_KEYS.indexOf(fd.k) >= 0 || fd.k === 'nextAction' || fd.k === 'planDate') h += fieldHTML(fd, f[fd.k]);
+  });
+
+  h += '<div class="form-sec">资料与备注</div>';
+  T.fields.forEach(function(fd){
+    if(fd.t === 'rows') h += fieldHTML(fd, f[fd.k]);
+    else if(fd.k === 'note') h += fieldHTML(fd, f[fd.k]);
+  });
+
   h += '</div><div class="mf">' +
        '<button class="btn btn-primary" data-act="save-item" data-type="' + type + '"' + (id ? ' data-id="' + id + '"' : '') + '>保存</button>' +
        '<button class="btn btn-ghost" data-act="close-modal">取消</button></div>';
@@ -1306,15 +1326,28 @@ function saveItem(type, id){
 
 /* ---------------- 弹窗：时间节点 ---------------- */
 
+const DL_TEMPLATES = [
+  { label:'大修 90 天', title:'大修意见回复', days:90 },
+  { label:'小修 30 天', title:'小修意见回复', days:30 },
+  { label:'审稿回复 15 天', title:'审稿意见回复', days:15 },
+  { label:'专利审查 15 天', title:'专利审查意见答复', days:15 },
+  { label:'截稿 60 天', title:'期刊截稿', days:60 }
+];
+
 function openDeadlineEditor(id){
   const d = id ? DB.deadlines.filter(function(x){ return x.id===id; })[0] : null;
   const linkOpts = ['<option value="">不关联条目</option>'].concat(DB.items.map(function(x){
     return '<option value="' + x.id + '"' + (d && d.itemId === x.id ? ' selected' : '') + '>' +
            esc(TYPES[x.type].label + ' · ' + x.title) + '</option>';
   })).join('');
+  const tpls = DL_TEMPLATES.map(function(t){
+    return '<button type="button" data-act="dl-tpl" data-title="' + esc(t.title) + '" data-days="' + t.days + '">' +
+           esc(t.label) + '</button>';
+  }).join('');
   let h = '<div class="mh"><h3>' + (d ? '编辑节点' : '添加节点') + '</h3>' +
           '<span class="en">DEADLINE</span>' +
           '<button data-act="close-modal" aria-label="关闭">×</button></div>' +
+          (d ? '' : '<div class="tpl-row">' + tpls + '<button type="button" data-act="dl-tpl" data-title="自定义节点" data-days="7">自定义 7 天</button></div>') +
           '<div class="grid2">' +
           '<div class="field f-full"><label>名称 <em>*</em></label><input data-d="title" value="' + esc(d?d.title:'') + '" placeholder="例：水力学期刊截稿 / 盲审意见返回 / 专利答复期限"></div>' +
           '<div class="field"><label>日期 <em>*</em></label><input data-d="date" type="date" value="' + esc(d?d.date:'') + '"></div>' +
@@ -1328,6 +1361,19 @@ function openDeadlineEditor(id){
   $('#modal').innerHTML = h;
   $('#mask').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+function applyDeadlineTemplate(btn){
+  const title = btn.getAttribute('data-title') || '';
+  const days = parseInt(btn.getAttribute('data-days'), 10) || 7;
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  const ds = date.toISOString().slice(0,10);
+  const ti = $('#modal [data-d="title"]');
+  const di = $('#modal [data-d="date"]');
+  if(ti) ti.value = title;
+  if(di) di.value = ds;
+  if(ti) ti.focus();
 }
 
 function saveDeadline(id){
@@ -1780,6 +1826,20 @@ function bindEvents(){
       window._listFilter = null;
       return renderAll();
     }
+    if(act === 'dl-tpl') return applyDeadlineTemplate(t);
+    if(act === 'focus-key'){
+      if(e.key === 'Enter' || e.key === ' ') { /* handled in keydown */ }
+    }
+  });
+
+  // 键盘：Enter / Space 触发 data-act 的非表单控件
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target.closest('[data-act][tabindex]');
+    if(!t) return;
+    if(t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'INPUT') return;
+    e.preventDefault();
+    t.click();
   });
 
   $('#qcTitle').addEventListener('keydown', function(e){
