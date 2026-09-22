@@ -507,9 +507,12 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .row:hover{ background:rgba(0,0,0,.03); }
 .row .no{ font-size:13px; color:var(--t-6); font-variant-numeric:tabular-nums; letter-spacing:1px; padding-top:5px; width:24px; flex:none; }
 .row .main{ flex:1; min-width:0; }
-.row .title{ font-size:20px; font-weight:600; line-height:26px; color:var(--t-1); word-break:break-word; }
+.row .title{ font-size:18px; font-weight:600; line-height:1.45; color:var(--t-1); word-break:break-word; }
 .row .title a:hover{ opacity:.6; }
-.row .desc{ font-size:14px; line-height:21px; color:var(--t-4); margin-top:var(--sp-2); word-break:break-word; }
+.row .desc{ font-size:13px; line-height:1.65; color:var(--t-5); margin-top:6px; word-break:break-word; }
+.row .no{ opacity:.85; }
+.row .stg{ font-size:12px; color:var(--t-6); }
+.row .due-chip{ font-size:12px; margin-top:4px; }
 .row .side{ display:flex; flex-direction:column; align-items:flex-end; gap:var(--sp-2); flex:none; }
 .row .acts{ display:flex; gap:var(--sp-2); margin-top:var(--sp-3); flex-wrap:wrap; }
 .row .stg{ font-size:13px; color:var(--t-6); font-variant-numeric:tabular-nums; }
@@ -536,13 +539,35 @@ section.view.on{ min-height:calc(100vh - 56px); }
   .row{ flex-wrap:wrap; padding:var(--sp-6) 0; gap:var(--sp-3); }
   .row .side{ flex-direction:row; align-items:center; width:100%; justify-content:flex-start; }
   .detail{ padding:0 0 var(--sp-6) var(--sp-6); }
-  .row .title{ font-size:18px; }
+  .row .title{ font-size:16px; }
 }
 
 /* ---------- 空状态 ---------- */
 .empty{ padding:var(--sp-10) 0; text-align:center; color:var(--t-5); font-size:14px;
         border-bottom:1px solid var(--line-2); }
 .empty b{ display:block; color:var(--t-3); font-size:16px; margin-bottom:var(--sp-2); }
+.empty .btn{ margin-top:var(--sp-4); }
+
+/* 键盘可达 */
+.mstat-chip:focus-visible, .tl-node:focus-visible, .stat:focus-visible,
+.filter-pill button:focus-visible, .seg button:focus-visible {
+  outline: 2px solid var(--t-1); outline-offset: 2px;
+}
+
+/* 表单分段 */
+.form-sec{
+  grid-column:1 / -1; margin-top:var(--sp-5); padding-top:var(--sp-4);
+  border-top:1px solid var(--line-2); font-size:12px; font-weight:600;
+  letter-spacing:1px; color:var(--t-5); text-transform:uppercase;
+}
+.form-sec:first-child{ margin-top:0; border-top:none; padding-top:0; }
+
+/* 节点模板 */
+.tpl-row{ display:flex; flex-wrap:wrap; gap:var(--sp-2); margin-bottom:var(--sp-4); }
+.tpl-row button{
+  border:1px solid var(--line-2); padding:6px 12px; font-size:12px; color:var(--t-3);
+}
+.tpl-row button:hover{ border-color:var(--t-1); color:var(--t-1); }
 
 /* ---------- 倒计时 ---------- */
 .dl{ display:flex; align-items:center; gap:var(--sp-5); padding:var(--sp-5) 0; border-bottom:1px solid var(--line-2); }
