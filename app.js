@@ -628,7 +628,7 @@ function tickClock(){
 const WIP_KEYS = {
   paper:    ['idea','writing','ready','submitted','review','major','minor'],
   thesis:   ['topic','proposal','writing','midterm','predef','blind'],
-  patent:   ['idea','brief','drafting','filed','accepted','prelim','subst'],
+  patent:   ['idea','brief','drafting'],
   copyright:['dev','preparing','filed','accepted'],
   software: ['dev','alpha','iterating']
 };
@@ -1485,7 +1485,9 @@ function patentLine(it, i){
   const st = R_OPT.lang === 'en' ? EN_STATUS.patent[it.status] : stDef('patent', it.status).def.n;
   const kind = f.patentType || '发明专利';
   const kindEn = kind === '实用新型' ? 'Utility Model' : (kind === '外观设计' ? 'Design Patent' : 'Invention Patent');
-  const tags = [f.myRank, st].filter(Boolean);
+  // 实审仅在「全部」范围出现，条目内显式标注
+  const substNote = (it.status === 'subst') ? (R_OPT.lang === 'en' ? 'Under substantive examination' : '实质审查') : '';
+  const tags = [f.myRank, st, substNote].filter(Boolean);
   if(R_OPT.fmt === 'bul'){
     return '• ' + [kind, f.myRank, st, title].filter(Boolean).join('｜');
   }
@@ -1571,6 +1573,7 @@ const SECT = {
 };
 
 function resumeItems(){
+  // 「仅已定稿」不含实审；「全部」含实审（条目内标注）
   return DB.items.filter(function(it){
     return R_OPT.scope === 'all' || isDone(it.type, it.status);
   });
@@ -1657,7 +1660,37 @@ function buildResumeText(){
 }
 
 function renderResume(){
-  $('#resumeOut').textContent = buildResumeText();
+  const text = buildResumeText();
+  const lines = text.split('\n');
+  const isItem = function(ln){ return /^\d+\.\s|^\[[0-9]+\]|^•/.test(ln); };
+  const isMeta = function(ln){ return /生成日期|只包含|包含全部|提示：|^科研成果汇总/.test(ln); };
+  let h = '';
+  let open = false;
+  function closeSec(){ if(open){ h += '</div></section>'; open = false; } }
+  lines.forEach(function(ln, idx){
+    if(!ln.trim()) return;
+    if(isMeta(ln)){
+      if(!open) h += '<div class="rhead">' + esc(ln) + '</div>';
+      else h += '<div class="rcont">' + esc(ln) + '</div>';
+      return;
+    }
+    if(/^[═─]/.test(ln) || (!isItem(ln) && ln.trim().length < 24 && ln.indexOf('　') !== 0 && ln[0] !== ' ')){
+      // 板块标题
+      const title = ln.replace(/^[═─\s]+|[═─\s]+$/g, '').replace(/\s*\/\s*.*$/, '');
+      closeSec();
+      h += '<section class="rsec"><h3>' + esc(title || ln.trim()) + '</h3><div class="rbody">';
+      open = true;
+      return;
+    }
+    if(!open){
+      h += '<section class="rsec"><h3></h3><div class="rbody">';
+      open = true;
+    }
+    if(isItem(ln)) h += '<div class="ritem">' + esc(ln) + '</div>';
+    else h += '<div class="rcont">' + esc(ln) + '</div>';
+  });
+  closeSec();
+  $('#resumeOut').innerHTML = h || '<div class="rhead">' + esc(text) + '</div>';
 }
 
 function initProfile(){
