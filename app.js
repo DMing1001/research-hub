@@ -628,59 +628,136 @@ function renderMap(){
   box.innerHTML = h;
 }
 
-/* 成果时间轴：论文投稿/录用/见刊 · 专利申请/实审/授权 · 软著申请/下证 */
-function milestoneList(){
-  const ev = [];
-  function add(date, group, label, title, mint){
-    if(!date) return;
-    ev.push({ date:String(date).slice(0,10), group:group, label:label, title:title, mint:!!mint });
+/* 成果关键节点：论文投稿/录用/见刊 · 专利申请/实审/授权 · 软著申请/下证 */
+function itemMilestones(it){
+  const f = it.fields || {};
+  const out = [];
+  function add(date, label, mint){
+    if(date) out.push({ date:String(date).slice(0,10), label:label, mint:!!mint });
   }
-  DB.items.forEach(function(it){
-    const f = it.fields || {};
-    const t = it.title || f.title || '';
-    if(it.type === 'paper'){
-      add(f.submitDate, 'paper', '投稿', t, false);
-      add(f.acceptDate, 'paper', '录用', t, true);
-      add(f.publishDate, 'paper', '见刊', t, true);
-    } else if(it.type === 'patent'){
-      add(f.filingDate, 'patent', '申请', t, false);
-      if(it.status === 'subst' || it.status === 'granted' || it.status === 'maintained'){
-        const tl = (it.timeline||[]).filter(function(x){ return /实质|实审|公布/.test(x.text); })[0];
-        if(tl && tl.date) add(tl.date, 'patent', '实审', t, false);
-      }
-      add(f.grantDate, 'patent', '授权', t, true);
-    } else if(it.type === 'copyright'){
-      add(f.filingDate || f.completionDate, 'copyright', '申请', t, false);
-      add(f.regDate, 'copyright', '下证', t, true);
-    } else if(it.type === 'software'){
-      add(f.releaseDate, 'copyright', '发布', t, true);
-    }
+  if(it.type === 'paper'){
+    add(f.submitDate, '投稿', false);
+    add(f.acceptDate, '录用', true);
+    add(f.publishDate, '见刊', true);
+  } else if(it.type === 'patent'){
+    add(f.filingDate, '申请', false);
+    const tl = (it.timeline||[]).filter(function(x){ return /实质|实审|公布/.test(x.text); })[0];
+    if(tl) add(tl.date, '实审', false);
+    add(f.grantDate, '授权', true);
+  } else if(it.type === 'copyright'){
+    add(f.filingDate || f.completionDate, '申请', false);
+    add(f.regDate, '下证', true);
+  } else if(it.type === 'software'){
+    add(f.releaseDate, '发布', true);
+  }
+  out.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  return out;
+}
+
+function itemPrimaryMilestone(it){
+  const ms = itemMilestones(it);
+  if(!ms.length) return null;
+  // 总轴只露最关键一格：优先定稿类，否则最后有日期的
+  for(let i = ms.length-1; i >= 0; i--) if(ms[i].mint) return ms[i];
+  return ms[ms.length-1];
+}
+
+function itemStageNodes(it){
+  // 单项轴：阶段链（撰写进度）+ 已填日期叠在对应阶段上
+  const arr = TYPES[it.type].statuses;
+  const cur = stDef(it.type, it.status);
+  const ms = itemMilestones(it);
+  // 把日期节点映射到相近阶段名
+  const map = { 投稿:'submitted', 录用:'accepted', 见刊:'published',
+                申请:'filed', 实审:'subst', 授权:'granted',
+                下证:'certified', 发布:'released', 受理:'accepted' };
+  return arr.map(function(s, i){
+    let date = '';
+    ms.forEach(function(m){
+      if(map[m.label] === s.k && !date) date = m.date;
+      if(m.label === '申请' && (s.k==='filed'||s.k==='dev') && !date && i<=1) date = m.date;
+      if(m.label === '下证' && s.k==='certified') date = m.date;
+      if(m.label === '授权' && (s.k==='granted'||s.k==='maintained') && !date) date = m.date;
+    });
+    const past = i < cur.i;
+    const isCur = s.k === it.status;
+    return {
+      label: s.n, date: date,
+      past: past, cur: isCur,
+      done: isCur && s.done, plan: !past && !isCur
+    };
   });
-  ev.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
-  return ev;
 }
 
 function renderAchTimeline(){
-  const box = $('#achTl'); if(!box) return;
+  const box = $('#tlStage'); if(!box) return;
+  const mode = window._tlMode || 'all';
   const filter = window._tlFilter || 'all';
-  let ev = milestoneList();
-  if(filter !== 'all') ev = ev.filter(function(e){ return e.group === filter; });
-  if(!ev.length){
-    box.innerHTML = '<div class="htl-empty">暂无时间节点 — 在条目里填上投稿/录用/申请/授权等日期后会出现在这里</div>';
+
+  if(mode === 'item'){
+    const it = DB.items.filter(function(x){ return x.id === window._tlItemId; })[0];
+    if(!it){ window._tlMode = 'all'; return renderAchTimeline(); }
+    const nodes = itemStageNodes(it);
+    const nodeHtml = nodes.map(function(n){
+      let cls = 'tl-node';
+      if(n.cur) cls += n.done ? ' mint' : ' done';
+      else if(n.past) cls += ' done';
+      else cls += ' plan';
+      return '<div class="' + cls + '">' +
+        '<div class="top">' +
+          '<span class="dt">' + esc(n.date || '·') + '</span>' +
+          '<span class="ev">' + esc(n.label) + '</span>' +
+        '</div>' +
+        '<span class="stem"></span><span class="dot"></span>' +
+        '<div class="bot"></div>' +
+      '</div>';
+    }).join('');
+    const st = stDef(it.type, it.status);
+    box.innerHTML =
+      '<div class="tl-item-head">' +
+        '<a class="back" href="#" data-act="tl-back">← 总轴</a>' +
+        '<div class="nm">' + esc(it.title) + '</div>' +
+        statusTag(it) +
+      '</div>' +
+      '<div class="tl-prog"><span class="lb">撰写进度</span>' + trackHTML(it.type, it.status) + '</div>' +
+      '<div class="tl-line item-mode"><div class="tl-nodes">' + nodeHtml + '</div></div>';
     return;
   }
-  box.innerHTML = ev.map(function(e){
-    const kind = e.group === 'paper' ? 'PAPER' : (e.group === 'patent' ? 'PATENT' : 'IP');
-    return '<div class="htl-ev t-' + e.group + (e.mint ? ' mint' : ' done') + '">' +
-      '<span class="dot"></span>' +
-      '<span class="kind">' + kind + '</span>' +
-      '<span class="dt">' + esc(e.date) + '</span>' +
-      '<span class="st">' + esc(e.label) + '</span>' +
-      '<span class="tt">' + esc(e.title) + '</span>' +
-      '</div>';
-  }).join('');
-  // 靠左对齐最新在右可滚；默认滚到最早
-  box.scrollLeft = 0;
+
+  // 总轴：一根线，每项成果只露最关键 1 个节点
+  let ev = [];
+  DB.items.forEach(function(it){
+    const key = itemPrimaryMilestone(it);
+    const group = (it.type === 'paper') ? 'paper' : (it.type === 'patent' ? 'patent' : 'copyright');
+    if(filter !== 'all' && group !== filter) return;
+    if(key){
+      ev.push({ date:key.date, label:key.label, mint:key.mint, it:it, group:group });
+    } else {
+      // 无日期：用 createdAt 占位，标「在制」
+      ev.push({ date:(it.createdAt||'').slice(0,10), label:stDef(it.type,it.status).def.n, mint:false, it:it, group:group, soft:true });
+    }
+  });
+  ev.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+
+  if(!ev.length){
+    box.innerHTML = '<div class="tl-empty">暂无时间节点 — 在条目里填上投稿/录用/申请/授权等日期后会出现在总轴</div>';
+    return;
+  }
+  const kindOf = function(g){ return g==='paper' ? 'PAPER' : (g==='patent' ? 'PATENT' : 'IP'); };
+  box.innerHTML = '<div class="tl-line"><div class="tl-nodes">' + ev.map(function(e){
+    const cls = 'tl-node ' + (e.mint ? 'mint' : (e.soft ? 'plan' : 'done'));
+    return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" title="' + esc(e.it.title) + '">' +
+      '<div class="top">' +
+        '<span class="dt">' + esc(e.date || '—') + '</span>' +
+        '<span class="ev">' + esc(e.label) + '</span>' +
+      '</div>' +
+      '<span class="stem"></span><span class="dot"></span>' +
+      '<div class="bot">' +
+        '<span class="kind">' + kindOf(e.group) + '</span>' +
+        '<div class="tt">' + esc(e.it.title) + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div></div>';
 }
 
 function renderDeadlines(){
@@ -1504,6 +1581,17 @@ function bindEvents(){
     if(act === 'print') return window.print();
     if(act === 'add-row') return addRow(t, t.getAttribute('data-key'));
     if(act === 'rm-row'){ const tr = t.closest('tr'); if(tr) tr.remove(); return; }
+    if(act === 'tl-item'){
+      window._tlMode = 'item';
+      window._tlItemId = id;
+      return renderAchTimeline();
+    }
+    if(act === 'tl-back'){
+      e.preventDefault();
+      window._tlMode = 'all';
+      window._tlItemId = null;
+      return renderAchTimeline();
+    }
   });
 
   $('#qcTitle').addEventListener('keydown', function(e){
@@ -1518,6 +1606,8 @@ function bindEvents(){
       if(!b) return;
       $$('#segTl button').forEach(function(x){ x.classList.toggle('on', x===b); });
       window._tlFilter = b.getAttribute('data-tl');
+      window._tlMode = 'all';
+      window._tlItemId = null;
       renderAchTimeline();
     });
   }
