@@ -65,6 +65,8 @@ const TYPES = {
       {k:'acceptDate',l:'录用日期',t:'date'},
       {k:'publishDate',l:'见刊日期',t:'date'},
       {k:'kw',l:'关键词',t:'text',full:1},
+      {k:'nextAction',l:'下一步',t:'text',full:1,hint:'例：补齐图表 / 回复审稿意见 / 交说明书'},
+      {k:'planDate',l:'计划完成日',t:'date'},
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（初稿 / 修回稿 / 录用通知 / PDF）',t:'rows',full:1}
     ]
@@ -87,6 +89,8 @@ const TYPES = {
       {k:'year',l:'预计答辩年份',t:'number'},
       {k:'chapters',l:'章节进度',t:'rows',full:1},
       {k:'milestones',l:'关键节点',t:'rows',full:1},
+      {k:'nextAction',l:'下一步',t:'text',full:1,hint:'例：补齐图表 / 回复审稿意见 / 交说明书'},
+      {k:'planDate',l:'计划完成日',t:'date'},
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（开题报告 / 初稿 / 盲审意见）',t:'rows',full:1}
     ]
@@ -114,6 +118,8 @@ const TYPES = {
       {k:'pubDate',l:'公开日',t:'date'},
       {k:'grantDate',l:'授权公告日',t:'date'},
       {k:'agency',l:'代理机构',t:'text'},
+      {k:'nextAction',l:'下一步',t:'text',full:1,hint:'例：补齐图表 / 回复审稿意见 / 交说明书'},
+      {k:'planDate',l:'计划完成日',t:'date'},
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（交底书 / 受理书 / 证书扫描件）',t:'rows',full:1}
     ]
@@ -137,6 +143,8 @@ const TYPES = {
       {k:'techStack',l:'开发技术栈',t:'text',full:1},
       {k:'devCount',l:'开发人数',t:'number'},
       {k:'myRank',l:'我的排名',t:'select',opts:RANK.copyright},
+      {k:'nextAction',l:'下一步',t:'text',full:1,hint:'例：补齐图表 / 回复审稿意见 / 交说明书'},
+      {k:'planDate',l:'计划完成日',t:'date'},
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（源程序 / 说明书 / 证书扫描件）',t:'rows',full:1}
     ]
@@ -159,6 +167,8 @@ const TYPES = {
       {k:'myRank',l:'贡献说明',t:'text',full:1,hint:'例：独立完成前后端与部署'},
       {k:'releaseDate',l:'首次发布日期',t:'date'},
       {k:'scale',l:'规模 / 数据',t:'text',full:1,hint:'例：12 个计算模块 / 服务 3 所设计院'},
+      {k:'nextAction',l:'下一步',t:'text',full:1,hint:'例：补齐图表 / 回复审稿意见 / 交说明书'},
+      {k:'planDate',l:'计划完成日',t:'date'},
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（截图 / 说明书 / 使用文档）',t:'rows',full:1}
     ]
@@ -611,6 +621,80 @@ function tickClock(){
   const days = ['日','一','二','三','四','五','六'];
   const ed = $('#clockDate');
   if(ed) ed.textContent = d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate()) + '  星期' + days[d.getDay()];
+}
+
+/* ---------------- 在写清单 ---------------- */
+
+const WIP_KEYS = {
+  paper:    ['idea','writing','ready','submitted','review','major','minor'],
+  thesis:   ['topic','proposal','writing','midterm','predef','blind'],
+  patent:   ['idea','brief','drafting','filed','accepted','prelim','subst'],
+  copyright:['dev','preparing','filed','accepted'],
+  software: ['dev','alpha','iterating']
+};
+
+function wipItems(){
+  return DB.items.filter(function(it){
+    if(it.type === 'copyright' && isDemoSeedCopyright(it)) return false;
+    return (WIP_KEYS[it.type] || []).indexOf(it.status) >= 0;
+  });
+}
+
+function wipSortKey(it){
+  const f = it.fields || {};
+  const plan = f.planDate || '';
+  if(!plan) return { rank: 3, left: null };
+  const left = daysBetween(today(), plan);
+  if(left < 0) return { rank: 0, left: left };
+  if(left <= 7) return { rank: 1, left: left };
+  return { rank: 2, left: left };
+}
+
+function renderWipList(){
+  const box = $('#wipList'); if(!box) return;
+  const arr = wipItems().map(function(it){ return { it: it, s: wipSortKey(it) }; })
+    .sort(function(a, b){
+      if(a.s.rank !== b.s.rank) return a.s.rank - b.s.rank;
+      const al = a.s.left == null ? 99999 : a.s.left;
+      const bl = b.s.left == null ? 99999 : b.s.left;
+      return al - bl;
+    });
+  if(!arr.length){
+    box.innerHTML = '<div class="empty"><b>没有在写条目</b>定稿/授权/下证之外的成果会出现在这里</div>';
+    return;
+  }
+  box.innerHTML = arr.map(function(row){
+    const it = row.it, s = row.s;
+    const f = it.fields || {};
+    const overdue = s.left != null && s.left < 0;
+    const near = s.left != null && s.left >= 0 && s.left <= 7;
+    const kind = TYPES[it.type].label;
+    let dueTxt = '未设计划日';
+    if(s.left != null){
+      if(s.left < 0) dueTxt = '计划 ' + f.planDate + ' · 已逾期 ' + Math.abs(s.left) + ' 天';
+      else if(s.left === 0) dueTxt = '计划 ' + f.planDate + ' · 今天';
+      else dueTxt = '计划 ' + f.planDate + ' · 还有 ' + s.left + ' 天';
+    }
+    const next = (f.nextAction || '').trim();
+    const st = stDef(it.type, it.status);
+    return '<div class="wip-card' + (overdue ? ' overdue' : '') + '">' +
+      '<div class="top">' +
+        '<span class="kind">' + esc(kind) + '</span>' +
+        '<div class="nm">' + esc(it.title) + '</div>' +
+        statusTag(it) +
+      '</div>' +
+      trackHTML(it.type, it.status) +
+      '<div class="next"><b>下一步</b>' + esc(next || '（未填）') + '</div>' +
+      '<div class="meta">' +
+        '<span class="' + (overdue || near ? 'due-near' : '') + '">' + esc(dueTxt) + '</span>' +
+        '<span>' + (st.i+1) + '/' + st.n + '</span>' +
+      '</div>' +
+      '<div class="acts">' +
+        (st.i < st.n-1 ? '<button class="btn btn-primary btn-sm" data-act="advance" data-id="' + it.id + '">推进 → ' + esc(TYPES[it.type].statuses[st.i+1].n) + '</button>' : '') +
+        '<button class="btn btn-ghost btn-sm" data-act="edit" data-type="' + it.type + '" data-id="' + it.id + '">编辑下一步 / 计划日</button>' +
+      '</div>' +
+      '</div>';
+  }).join('');
 }
 
 /* 成果图谱：分类 × 状态计数（软著不含演示种子） */
@@ -1594,6 +1678,7 @@ function downloadResume(){ downloadFile('科研成果汇总-' + today() + '.txt'
 
 function renderAll(){
   renderStats();
+  renderWipList();
   renderAchTimeline();
   renderIdentityClock();
   renderMap();
