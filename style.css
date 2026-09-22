@@ -247,6 +247,80 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .clock-time{ font-size:28px; font-weight:700; color:var(--t-1); letter-spacing:1px; font-variant-numeric:tabular-nums; line-height:1.2; }
 .clock-date{ font-size:13px; color:var(--t-5); margin-top:6px; }
 #mapSvg{ display:block; }
+
+/* ---------- 成果时间轴（横向） ---------- */
+.tl-bar{ display:flex; align-items:center; gap:var(--sp-4); padding:0 0 var(--sp-4); }
+.panel-t .en{ font-size:12px; font-weight:400; color:var(--t-5); letter-spacing:1px; margin-left:var(--sp-3); }
+.panel-t .caption{ font-size:12px; font-weight:400; color:var(--t-6); }
+.htl-wrap{
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line-2);
+  overflow-x:auto; overflow-y:hidden; margin-bottom:var(--sp-6);
+  -webkit-overflow-scrolling:touch;
+}
+.htl{
+  display:flex; align-items:stretch; min-width:max-content;
+  padding:var(--sp-6) 0 var(--sp-5); position:relative;
+}
+.htl::before{
+  content:''; position:absolute; left:0; right:0; top:calc(var(--sp-6) + 18px);
+  height:1px; background:var(--line-2);
+}
+.htl-ev{
+  position:relative; width:132px; flex:none; padding:0 var(--sp-3);
+  display:flex; flex-direction:column; align-items:flex-start; gap:6px;
+}
+.htl-ev .dot{
+  width:9px; height:9px; border:1px solid var(--t-1); background:var(--bg);
+  margin-left:2px; z-index:1;
+}
+.htl-ev.done .dot{ background:var(--t-1); }
+.htl-ev.mint .dot{ background:var(--mint); border-color:var(--mint); }
+.htl-ev .dt{
+  font-size:12px; color:var(--t-6); font-variant-numeric:tabular-nums; letter-spacing:.2px;
+}
+.htl-ev .st{
+  font-size:13px; font-weight:600; color:var(--t-1); line-height:1.3;
+}
+.htl-ev .tt{
+  font-size:12px; color:var(--t-4); line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.htl-ev.t-paper .st{ color:var(--t-1); }
+.htl-ev .kind{
+  font-size:10px; letter-spacing:.8px; color:var(--t-6); text-transform:uppercase;
+}
+.htl-empty{
+  padding:var(--sp-8) var(--sp-4); color:var(--t-5); font-size:14px; width:100%;
+}
+
+/* ---------- 成果图谱矩阵 ---------- */
+.mmap{ display:flex; flex-direction:column; gap:10px; }
+.mmap-row{ display:flex; align-items:center; gap:10px; }
+.mmap-row .lb{
+  width:52px; flex:none; font-size:12px; color:var(--t-4); text-align:right;
+}
+.mmap-row .cells{ display:flex; flex-wrap:wrap; gap:4px; flex:1; min-width:0; }
+.mmap-row .cell{
+  width:12px; height:12px; border:1px solid var(--t-5); background:transparent;
+}
+.mmap-row .cell.done{ background:var(--t-1); border-color:var(--t-1); }
+.mmap-row .cell.mint{ background:var(--mint); border-color:var(--mint); }
+.mmap-row .cell.wip{ background:var(--line-2); border-color:var(--line-2); }
+.mmap-row .ct{
+  width:36px; flex:none; font-size:12px; color:var(--t-6);
+  font-variant-numeric:tabular-nums; text-align:right;
+}
+.mmap-legend{
+  display:flex; gap:var(--sp-4); margin-top:var(--sp-2);
+  font-size:11px; color:var(--t-6);
+}
+.mmap-legend i{
+  display:inline-block; width:8px; height:8px; border:1px solid var(--t-5);
+  margin-right:4px; vertical-align:middle;
+}
+.mmap-legend i.d{ background:var(--t-1); border-color:var(--t-1); }
+.mmap-legend i.m{ background:var(--mint); border-color:var(--mint); }
+.mmap-legend i.w{ background:var(--line-2); border-color:var(--line-2); }
 @media (max-width:900px){
   .idrow{ grid-template-columns:1fr 1fr; }
   .mapcard{ grid-column:1 / -1; border-right:none; border-top:1px solid var(--line-2); }
