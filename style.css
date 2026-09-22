@@ -341,6 +341,33 @@ section.view.on{ min-height:calc(100vh - 56px); }
 }
 .tl-prog .lb{ font-size:12px; color:var(--t-6); letter-spacing:.4px; flex:none; }
 
+/* ---------- 在写清单 ---------- */
+.wip-card{
+  border:1px solid var(--line-2); background:var(--bg-2);
+  padding:var(--sp-5) var(--sp-6); margin-bottom:var(--sp-3);
+}
+.wip-card.overdue{ border-color:var(--warn); }
+.wip-card .top{ display:flex; align-items:baseline; gap:var(--sp-3); flex-wrap:wrap; }
+.wip-card .kind{
+  font-size:11px; letter-spacing:.6px; color:var(--t-6); flex:none;
+}
+.wip-card .nm{
+  font-size:16px; font-weight:600; color:var(--t-1); flex:1; min-width:180px;
+  line-height:1.4;
+}
+.wip-card .next{
+  font-size:14px; color:var(--t-2); margin-top:var(--sp-3);
+}
+.wip-card .next b{ font-weight:500; color:var(--t-5); font-size:12px; margin-right:6px; }
+.wip-card .meta{
+  display:flex; align-items:center; gap:var(--sp-4); flex-wrap:wrap;
+  margin-top:var(--sp-3); font-size:13px; color:var(--t-5);
+  font-variant-numeric:tabular-nums;
+}
+.wip-card .meta .due-near{ color:var(--warn); font-weight:600; }
+.wip-card .acts{ display:flex; gap:var(--sp-2); margin-top:var(--sp-4); flex-wrap:wrap; }
+.wip-card .pstep{ margin-top:var(--sp-3); max-width:420px; }
+
 /* ---------- 成果图谱 · 状态计数块 ---------- */
 .mstat{ display:flex; flex-direction:column; gap:var(--sp-4); }
 .mstat-row{ display:flex; align-items:center; gap:var(--sp-3); flex-wrap:wrap; }
