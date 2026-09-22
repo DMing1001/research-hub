@@ -351,15 +351,29 @@ section.view.on{ min-height:calc(100vh - 56px); }
   min-width:72px; height:44px; padding:4px 12px;
   border:1px solid var(--line); background:var(--bg-2);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  cursor:pointer; transition:opacity .15s ease, background .15s ease;
 }
-.mstat-chip .k{ font-size:11px; color:var(--t-5); line-height:1.2; }
+.mstat-chip:hover{ opacity:.75; }
+.mstat-chip .k{ font-size:11px; color:var(--t-5); line-height:1.2; pointer-events:none; }
 .mstat-chip .n{
   font-size:18px; font-weight:600; color:var(--t-1); line-height:1.1;
-  font-variant-numeric:tabular-nums;
+  font-variant-numeric:tabular-nums; pointer-events:none;
 }
 .mstat-chip.mint{ background:var(--mint); border-color:var(--mint); }
 .mstat-chip.mint .k{ color:var(--t-2); }
 .mstat-chip.mint .n{ color:var(--t-1); }
+.filter-pill{
+  display:flex; align-items:center; gap:var(--sp-3);
+  margin:0 0 var(--sp-4); padding:8px var(--sp-4);
+  border:1px solid var(--line); background:var(--bg-2);
+  font-size:13px; color:var(--t-2);
+}
+.filter-pill b{ font-weight:600; color:var(--t-1); }
+.filter-pill button{
+  margin-left:auto; font-size:13px; color:var(--t-4);
+  border-bottom:1px solid var(--line-2); padding-bottom:1px;
+}
+.filter-pill button:hover{ color:var(--t-1); border-color:var(--t-1); }
 .mmap{ display:flex; flex-direction:column; gap:10px; }
 .mmap-row{ display:flex; align-items:center; gap:10px; }
 .mmap-row .lb{
