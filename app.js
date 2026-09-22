@@ -574,6 +574,12 @@ function jumpTo(type){
 
 function showView(name){
   const key = name || 'dash';
+  if(window._listFilter && window._listFilter.type !== mapTypeToView(window._listFilter.type) && window._listFilter.view !== key){
+    // 保持筛选若仍在同一分类视图
+  }
+  if(window._listFilter && window._listFilter.view !== key){
+    window._listFilter = null;
+  }
   $$('.view, .view-hero').forEach(function(el){
     el.classList.toggle('on', el.getAttribute('data-view') === key);
   });
@@ -582,8 +588,11 @@ function showView(name){
   });
   closeDrawer();
   window.scrollTo(0, 0);
-  if(window._open){ window._open = null; renderAll(); }
+  if(window._open){ window._open = null; }
+  renderAll();
 }
+
+function mapTypeToView(t){ return t; }
 
 function renderIdentityClock(){
   const name = DB.profile.name || 'RESEARCHER';
@@ -647,8 +656,11 @@ function renderMap(){
     h += '<div class="mstat-row"><span class="lb">' + row.label + '</span>';
     STATUS_BUCKETS[row.type].forEach(function(b){
       const n = list.filter(function(it){ return b.keys.indexOf(it.status) >= 0; }).length;
-      // 未落入桶的状态也尽量归入在写
-      h += '<div class="mstat-chip' + (b.mint ? ' mint' : '') + '" title="' + esc(row.label + ' · ' + b.k) + '">' +
+      const keys = b.keys.join(',');
+      h += '<div class="mstat-chip' + (b.mint ? ' mint' : '') + '"' +
+           ' data-act="map-filter" data-type="' + row.type + '"' +
+           ' data-keys="' + esc(keys) + '" data-label="' + esc(b.k) + '"' +
+           ' title="查看「' + esc(row.label + ' · ' + b.k) + '」列表">' +
            '<span class="k">' + esc(b.k) + '</span>' +
            '<span class="n">' + n + '</span>' +
            '</div>';
@@ -924,14 +936,28 @@ function statusTag(it){
 }
 
 function renderList(type){
-  const arr = DB.items.filter(function(x){ return x.type===type; })
-                      .sort(function(a,b){ return (b.updatedAt||'') < (a.updatedAt||'') ? -1 : 1; });
+  let arr = DB.items.filter(function(x){ return x.type===type; })
+                    .sort(function(a,b){ return (b.updatedAt||'') < (a.updatedAt||'') ? -1 : 1; });
+  const fl = window._listFilter;
+  const active = fl && fl.type === type && fl.keys;
+  if(active){
+    arr = arr.filter(function(it){ return fl.keys.indexOf(it.status) >= 0; });
+    // 软著筛选时排除演示种子
+    if(type === 'copyright') arr = arr.filter(function(it){ return !isDemoSeedCopyright(it); });
+  }
   const box = document.getElementById('list-' + type);
+  let pill = '';
+  if(active){
+    pill = '<div class="filter-pill">筛选：<b>' + esc(TYPES[type].label + ' · ' + fl.label) + '</b>' +
+           '（' + arr.length + ' 条）' +
+           '<button data-act="filter-clear">显示全部</button></div>';
+  }
   if(!arr.length){
-    box.innerHTML = '<div class="empty"><b>暂无' + TYPES[type].label + '条目</b>点右上角「＋ 新建」或用上方快速录入</div>';
+    box.innerHTML = pill + '<div class="empty"><b>暂无' + TYPES[type].label + '条目</b>' +
+      (active ? '当前筛选条件下没有结果，点「显示全部」' : '点右上角「＋ 新建」或用上方快速录入') + '</div>';
     return;
   }
-  let h = '';
+  let h = pill;
   arr.forEach(function(it, i){
     const s = stDef(it.type, it.status);
     const open = window._open === it.id;
@@ -1624,6 +1650,17 @@ function bindEvents(){
       window._tlMode = 'all';
       window._tlItemId = null;
       return renderAchTimeline();
+    }
+    if(act === 'map-filter'){
+      const ft = t.getAttribute('data-type');
+      const keys = (t.getAttribute('data-keys') || '').split(',').filter(Boolean);
+      const label = t.getAttribute('data-label') || '';
+      window._listFilter = { type: ft, keys: keys, label: label, view: ft };
+      return showView(ft);
+    }
+    if(act === 'filter-clear'){
+      window._listFilter = null;
+      return renderAll();
     }
   });
 
