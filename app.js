@@ -602,29 +602,58 @@ function tickClock(){
   if(ed) ed.textContent = d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate()) + '  星期' + days[d.getDay()];
 }
 
+/* 成果图谱：分类 × 状态计数（软著不含演示种子） */
+function isDemoSeedCopyright(it){
+  if(it.type !== 'copyright') return false;
+  const mats = (it.fields && it.fields.materials) || [];
+  return mats.some(function(m){ return String(m.url || '').indexOf('Software-copyright/') === 0; });
+}
+
+const STATUS_BUCKETS = {
+  paper: [
+    { k:'在写', keys:['idea','writing','ready'] },
+    { k:'在审', keys:['submitted','review','major','minor'] },
+    { k:'录用', keys:['accepted'], mint:true },
+    { k:'见刊', keys:['published'], mint:true }
+  ],
+  patent: [
+    { k:'在写', keys:['idea','brief','drafting'] },
+    { k:'在审', keys:['filed','accepted','prelim','subst'] },
+    { k:'授权', keys:['granted','maintained'], mint:true }
+  ],
+  copyright: [
+    { k:'在写', keys:['dev','preparing'] },
+    { k:'在审', keys:['filed','accepted'] },
+    { k:'下证', keys:['registered','certified'], mint:true }
+  ]
+};
+
 function renderMap(){
   const box = $('#mapBox'); if(!box) return;
-  const order = ['paper','thesis','patent','copyright','software'];
-  let h = '<div class="mmap">';
-  order.forEach(function(t){
-    const arr = DB.items.filter(function(x){ return x.type===t; });
-    let cells = '';
-    const finalKeys = ['published','certified','released','granted','maintained','final','defended','archived'];
-    arr.forEach(function(o){
-      const done = isDone(o.type, o.status);
-      const c = done ? (finalKeys.indexOf(o.status)>=0 ? 'cell mint' : 'cell done') : (o.status ? 'cell wip' : 'cell');
-      cells += '<span class="' + c + '" title="' + esc(o.title) + ' · ' + esc(stDef(o.type,o.status).def.n) + '"></span>';
+  const rows = [
+    { type:'paper', label:'论文' },
+    { type:'patent', label:'专利' },
+    { type:'copyright', label:'软著' }
+  ];
+  let h = '<div class="mstat">';
+  rows.forEach(function(row){
+    const list = DB.items.filter(function(it){
+      if(it.type !== row.type) return false;
+      if(row.type === 'copyright' && isDemoSeedCopyright(it)) return false;
+      return true;
     });
-    if(!arr.length) cells = '<span class="cell" style="opacity:.35"></span>';
-    h += '<div class="mmap-row">' +
-         '<span class="lb">' + esc(TYPES[t].label) + '</span>' +
-         '<span class="cells">' + cells + '</span>' +
-         '<span class="ct">' + arr.length + '</span></div>';
+    h += '<div class="mstat-row"><span class="lb">' + row.label + '</span>';
+    STATUS_BUCKETS[row.type].forEach(function(b){
+      const n = list.filter(function(it){ return b.keys.indexOf(it.status) >= 0; }).length;
+      // 未落入桶的状态也尽量归入在写
+      h += '<div class="mstat-chip' + (b.mint ? ' mint' : '') + '" title="' + esc(row.label + ' · ' + b.k) + '">' +
+           '<span class="k">' + esc(b.k) + '</span>' +
+           '<span class="n">' + n + '</span>' +
+           '</div>';
+    });
+    h += '</div>';
   });
-  h += '</div><div class="mmap-legend">' +
-       '<span><i class="m"></i>定稿</span>' +
-       '<span><i class="d"></i>推进中</span>' +
-       '<span><i class="w"></i>在制</span></div>';
+  h += '</div>';
   box.innerHTML = h;
 }
 
