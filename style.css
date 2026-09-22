@@ -120,8 +120,9 @@ section{ border-top:1px solid var(--line); }
 .hero{
   position:relative; height:520px; overflow:hidden;
   border-top:1px solid var(--line); border-bottom:1px solid var(--line);
-  display:flex; align-items:flex-end;
+  display:none; align-items:flex-end;
 }
+.hero.on{ display:flex; }
 .hero-bg{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:6px; pointer-events:none; }
 .mq{ white-space:nowrap; overflow:hidden; font-size:56px; font-weight:700; letter-spacing:14px;
      line-height:1.2; color:var(--t-1); opacity:.08; }
@@ -193,17 +194,34 @@ section{ border-top:1px solid var(--line); }
 .bar > i{ display:block; height:100%; background:var(--t-1); transition:width .3s cubic-bezier(.2,0,.2,1); }
 .bar > i.done{ background:var(--mint); }
 
-/* ---------- 里程碑点条 ---------- */
-.track{ display:flex; flex-wrap:wrap; align-items:center; gap:0; margin-top:var(--sp-3); max-width:100%; }
-.ms{ display:inline-flex; align-items:center; font-size:11px; line-height:16px; color:var(--t-5);
-     letter-spacing:.2px; white-space:nowrap; font-variant-numeric:tabular-nums; }
-.ms .dot{ width:7px; height:7px; border:1px solid var(--t-5); background:transparent; margin-right:5px; flex:none; }
-.ms.done{ color:var(--t-3); }
-.ms.done .dot{ background:var(--t-1); border-color:var(--t-1); }
-.ms.cur{ color:var(--t-1); font-weight:600; }
-.ms.cur .dot{ background:var(--bg-2); border-color:var(--t-1); box-shadow:inset 0 0 0 2px var(--t-1); }
-.ms.done-final .dot{ background:var(--mint); border-color:var(--mint); }
-.ms .link{ width:14px; height:1px; background:var(--line-2); margin:0 6px; flex:none; }
+/* ---------- 视图切换（非长页滚动） ---------- */
+.view{ display:none; border-top:1px solid var(--line); }
+.view.on{ display:block; }
+.view-hero{ display:none; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.view-hero.on{ display:flex; }
+.nav-links a.on{ opacity:1; font-weight:700; }
+.nav-links a.on::after{
+  content:''; display:block; height:2px; background:var(--t-1); margin-top:2px;
+}
+section.view.on{ min-height:calc(100vh - 56px); }
+
+/* ---------- 里程碑进度（分段条 + 当前状态） ---------- */
+.pstep{ display:flex; align-items:center; gap:var(--sp-4); margin-top:var(--sp-3); max-width:520px; }
+.pseg{ display:flex; flex:1; gap:3px; height:4px; min-width:120px; }
+.pseg i{ flex:1; background:var(--line-2); }
+.pseg i.past{ background:var(--t-1); }
+.pseg i.cur{ background:var(--t-1); position:relative; }
+.pseg i.cur::after{
+  content:''; position:absolute; left:50%; top:-4px; width:2px; height:12px;
+  background:var(--t-1); transform:translateX(-50%);
+}
+.pseg i.done-final{ background:var(--t-1); }
+.pcap{
+  flex:none; font-size:13px; color:var(--t-3); white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.pcap b{ color:var(--t-1); font-weight:600; }
+.pcap span{ color:var(--t-6); margin-left:6px; }
 
 /* ---------- 快速录入 Composer ---------- */
 .composer{
@@ -258,11 +276,7 @@ section{ border-top:1px solid var(--line); }
 .shelf-item .nm{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--t-1); }
 .shelf-item .sz{ font-size:12px; color:var(--t-6); font-variant-numeric:tabular-nums; flex:none; }
 .shelf-item .src{ font-size:12px; color:var(--t-5); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:none; }
-.row .drop-hint{
-  margin-top:var(--sp-2); font-size:12px; color:var(--t-6);
-  border:1px dashed var(--line-2); padding:6px 10px; display:none;
-}
-.row:hover .drop-hint, .row.dropover .drop-hint{ display:block; }
+.row.dropover{ outline:1px solid var(--t-1); outline-offset:-1px; }
 
 /* ---------- 卡片到期高亮 ---------- */
 .due-chip{
