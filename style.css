@@ -576,12 +576,40 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .seg button.on{ background:var(--t-1); color:var(--bg-2); }
 
 .resume-out{
-  background:var(--bg-2); border:1px solid var(--line-2); padding:var(--sp-7);
-  font-size:14px; line-height:1.9; white-space:pre-wrap; word-break:break-word;
-  font-family:var(--font); color:var(--t-2); max-height:620px; overflow:auto;
+  background:var(--bg-2); border:1px solid var(--line); border-top:3px solid var(--t-1);
+  padding:40px 44px; font-size:15px; line-height:1.85; word-break:break-word;
+  font-family:var(--font); color:var(--t-2); max-height:720px; overflow:auto;
+}
+.resume-out .rhead{
+  font-size:13px; color:var(--t-5); margin-bottom:var(--sp-5);
+  padding-bottom:var(--sp-4); border-bottom:1px solid var(--line-2);
+}
+.resume-out .rsec{
+  display:flex; gap:var(--sp-5); padding:var(--sp-5) 0;
+  border-bottom:1px solid var(--line-2);
+}
+.resume-out .rsec:last-child{ border-bottom:none; }
+.resume-out .rsec h3{
+  width:110px; flex:none; font-size:15px; font-weight:700; color:var(--t-1);
+  line-height:1.5; margin:0; padding-left:var(--sp-3);
+  border-left:3px solid var(--t-1);
+}
+.resume-out .rbody{ flex:1; min-width:0; }
+.resume-out .ritem{
+  font-size:14.5px; line-height:1.85; color:var(--t-2);
+  padding:6px 0; white-space:pre-wrap;
+}
+.resume-out .rcont{
+  font-size:13.5px; color:var(--t-3); line-height:1.75;
+  padding:2px 0 2px 12px; white-space:pre-wrap;
 }
 .resume-out h3{ font-size:16px; font-weight:700; color:var(--t-1); margin:var(--sp-6) 0 var(--sp-2); }
 .resume-out h3:first-child{ margin-top:0; }
+@media (max-width:600px){
+  .resume-out{ padding:var(--sp-6) var(--sp-5); }
+  .resume-out .rsec{ flex-direction:column; gap:var(--sp-2); }
+  .resume-out .rsec h3{ width:auto; }
+}
 
 /* ---------- 弹窗 ---------- */
 .mask{
