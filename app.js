@@ -1237,7 +1237,7 @@ function delDeadline(id){
   save(); renderAll();
 }
 
-/* ---------------- 快速录入 / 拖拽资料 / 重置 ---------------- */
+/* ---------------- 快速录入 / 资料附件 ---------------- */
 
 function quickAdd(){
   const type = $('#qcType').value;
@@ -1262,16 +1262,6 @@ function quickAdd(){
 }
 
 function attachFiles(){ /* 拖拽附件已移除 */ }
-
-function resetDemo(){
-  if(!confirm('重置会覆盖当前全部数据，建议先导出备份。确定重置？')) return;
-  DB = blank();
-  seed(); DB.seedDone = true;
-  seedExtras();
-  logAct('重置：演示种子 + 材料汇总预填');
-  save(); renderAll();
-  toast('已重置', 'back');
-}
 
 /* ---------------- 数据导入导出 ---------------- */
 
@@ -1617,7 +1607,6 @@ function bindEvents(){
     if(act === 'save-deadline') return saveDeadline(id || null);
     if(act === 'notify') return askNotify();
     if(act === 'quick-add') return quickAdd();
-    if(act === 'reset-demo') return resetDemo();
     if(act === 'copy-resume') return copyResume();
     if(act === 'download-resume') return downloadResume();
     if(act === 'print') return window.print();
