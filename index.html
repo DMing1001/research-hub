@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Hub — 研究生学术成果与投稿管理台</title>
+<meta name="description" content="研究生论文撰写、投稿、专利、软著、软件进展管理与简历成果汇总">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FAF7F5'/%3E%3Crect x='4' y='7' width='24' height='1' fill='%23000'/%3E%3Crect x='4' y='15' width='24' height='1' fill='%23000'/%3E%3Crect x='4' y='23' width='24' height='1' fill='%23000'/%3E%3Crect x='4' y='7' width='4' height='8' fill='%235ED4AD'/%3E%3Crect x='4' y='16' width='7' height='7' fill='%23000'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════ 提醒条 ══════════ -->
+<div class="alert" id="alertBar" style="display:none">
+  <div class="wrap"><span id="alertText"></span><button onclick="dismissAlert()" aria-label="关闭">×</button></div>
+</div>
+
+<!-- ══════════ 导航 56px ══════════ -->
+<nav class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top">RESEARCH HUB<span>学术成果管理台</span></a>
+    <div class="nav-links">
+      <a href="#dash">总览</a>
+      <a href="#paper">小论文</a>
+      <a href="#thesis">大论文</a>
+      <a href="#patent">专利</a>
+      <a href="#ip">软著与软件</a>
+      <a href="#resume">简历墙</a>
+    </div>
+    <div class="nav-right">
+      <button class="btn btn-ghost btn-sm" onclick="exportJSON()">导出</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileIn').click()">导入</button>
+      <button class="burger" onclick="document.getElementById('drawer').classList.toggle('open')">☰</button>
+    </div>
+  </div>
+</nav>
+<div class="drawer" id="drawer">
+  <a href="#dash" onclick="closeDrawer()">总览</a>
+  <a href="#paper" onclick="closeDrawer()">小论文</a>
+  <a href="#thesis" onclick="closeDrawer()">大论文</a>
+  <a href="#patent" onclick="closeDrawer()">专利</a>
+  <a href="#ip" onclick="closeDrawer()">软著与软件</a>
+  <a href="#resume" onclick="closeDrawer()">简历墙</a>
+</div>
+<input type="file" id="fileIn" accept="application/json,.json" style="display:none" onchange="importJSON(this)">
+
+<!-- ══════════ Hero ══════════ -->
+<header class="hero" id="top">
+  <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-in">
+    <h1>HELLO, RESEARCHER</h1>
+    <div class="sub">研究生学术成果与投稿管理台 — 论文 · 专利 · 软著 · 软件</div>
+    <div class="meta" id="heroMeta">LOCAL-FIRST · 数据仅存于本机浏览器 · 支持 JSON 导出备份</div>
+  </div>
+</header>
+
+<!-- ══════════ 01 总览 ══════════ -->
+<section id="dash">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">01</span>
+      <h2>总览</h2>
+      <span class="en">OVERVIEW</span>
+      <span class="grow"></span>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="cols">
+      <div>
+        <div class="panel-t">近期节点 · 倒计时</div>
+        <div id="deadlines"></div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="openDeadlineEditor()">＋ 添加节点</button>
+          <button class="btn btn-ghost btn-sm" onclick="askNotify()">开启桌面提醒</button>
+        </div>
+      </div>
+      <div>
+        <div class="panel-t">最近动态 · 时间线</div>
+        <div id="activity"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 02 小论文 ══════════ -->
+<section id="paper">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">02</span><h2>小论文</h2><span class="en">JOURNAL / CONFERENCE PAPER</span>
+      <span class="grow"></span>
+      <button class="btn btn-primary btn-sm" onclick="openEditor('paper')">＋ 新建</button>
+    </div>
+    <div class="list" id="list-paper"></div>
+  </div>
+</section>
+
+<!-- ══════════ 03 大论文 ══════════ -->
+<section id="thesis">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">03</span><h2>大论文</h2><span class="en">THESIS / DISSERTATION</span>
+      <span class="grow"></span>
+      <button class="btn btn-primary btn-sm" onclick="openEditor('thesis')">＋ 新建</button>
+    </div>
+    <div class="list" id="list-thesis"></div>
+  </div>
+</section>
+
+<!-- ══════════ 04 专利 ══════════ -->
+<section id="patent">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">04</span><h2>专利</h2><span class="en">PATENT</span>
+      <span class="grow"></span>
+      <button class="btn btn-primary btn-sm" onclick="openEditor('patent')">＋ 新建</button>
+    </div>
+    <div class="list" id="list-patent"></div>
+  </div>
+</section>
+
+<!-- ══════════ 05 软著与软件 ══════════ -->
+<section id="ip">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">05</span><h2>软著与软件</h2><span class="en">SOFTWARE COPYRIGHT / SOFTWARE</span>
+      <span class="grow"></span>
+      <button class="btn btn-ghost btn-sm" onclick="openEditor('software')">＋ 软件</button>
+      <button class="btn btn-primary btn-sm" onclick="openEditor('copyright')">＋ 软著</button>
+    </div>
+    <h3 style="font-size:20px;font-weight:600;color:var(--t-1);padding:8px 0 4px">软件著作权</h3>
+    <div class="list" id="list-copyright"></div>
+    <h3 style="font-size:20px;font-weight:600;color:var(--t-1);padding:32px 0 4px">软件成果</h3>
+    <div class="list" id="list-software"></div>
+  </div>
+</section>
+
+<!-- ══════════ 06 简历墙 ══════════ -->
+<section id="resume">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">06</span><h2>简历墙</h2><span class="en">CV READY OUTPUT</span>
+      <span class="grow"></span>
+    </div>
+
+    <div class="filterbar no-print">
+      <label>署名</label>
+      <input id="profileName"   placeholder="中文姓名" style="width:110px;padding:8px 10px;font-size:14px;border-color:var(--line-2)">
+      <input id="profileNameEn" placeholder="English name" style="width:140px;padding:8px 10px;font-size:14px;border-color:var(--line-2)">
+      <label style="margin-left:12px">语言</label>
+      <div class="seg" id="segLang">
+        <button class="on" data-v="zh">中文</button>
+        <button data-v="en">English</button>
+        <button data-v="both">中英对照</button>
+      </div>
+      <label>格式</label>
+      <div class="seg" id="segFmt">
+        <button class="on" data-v="text">简历条目</button>
+        <button data-v="gb">参考文献</button>
+        <button data-v="bul">要点速览</button>
+        <button data-v="mat">资料清单</button>
+      </div>
+      <label>范围</label>
+      <div class="seg" id="segScope">
+        <button class="on" data-v="done">仅已定稿</button>
+        <button data-v="all">全部</button>
+      </div>
+      <label>分组</label>
+      <select id="groupBy"><option value="type">按类别</option><option value="year">按年份</option></select>
+      <span style="flex:1;min-width:8px"></span>
+      <button class="btn btn-primary btn-sm" onclick="copyResume()">复制</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadResume()">下载 .txt</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">打印</button>
+    </div>
+
+    <div class="resume-out" id="resumeOut"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand">RESEARCH HUB</div>
+    <p>研究生学术成果与投稿管理台 · 数据保存在本机浏览器 localStorage<br>
+       建议定期点「导出」备份 JSON，换设备时用「导入」恢复。</p>
+  </div>
+</footer>
+
+<!-- ══════════ 条目编辑弹窗 ══════════ -->
+<div class="mask" id="mask">
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
