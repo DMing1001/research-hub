@@ -496,23 +496,23 @@ function toast(msg, icon){
   clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove('show'); }, 2200);
 }
 
-/* 里程碑点条：比百分比进度条更可读 */
+/* 分段进度条：只标当前阶段，完整链路放 title */
 function trackHTML(type, statusKey){
   const arr = TYPES[type].statuses;
   const cur = stDef(type, statusKey);
-  let h = '<div class="track" aria-label="阶段进度">';
+  const chain = arr.map(function(s){ return s.n; }).join(' → ');
+  let segs = '';
   arr.forEach(function(s, i){
-    const isPast = i < cur.i;
-    const isCur  = s.k === statusKey;
-    const doneFinal = !!(s.done && (isCur || isPast));
-    let cls = 'ms';
-    if(isCur) cls += ' cur';
-    else if(isPast) cls += ' done';
-    if(doneFinal) cls += ' done-final';
-    h += '<span class="' + cls + '"><i class="dot"></i>' + esc(s.n) + '</span>';
-    if(i < arr.length - 1) h += '<i class="link"></i>';
+    let cls = '';
+    if(i < cur.i) cls = s.done ? ' past done-final' : ' past';
+    else if(i === cur.i) cls = ' cur' + (s.done ? ' done-final' : '');
+    segs += '<i class="' + cls.trim() + '"></i>';
   });
-  return h + '</div>';
+  const label = cur.def.n || '未设置';
+  return '<div class="pstep" title="' + esc(chain) + '">' +
+         '<div class="pseg" aria-label="阶段进度">' + segs + '</div>' +
+         '<div class="pcap"><b>' + esc(label) + '</b><span>' + (cur.i+1) + '/' + cur.n + '</span></div>' +
+         '</div>';
 }
 
 function itemDueInfo(it){
@@ -553,9 +553,20 @@ function renderStats(){
 }
 
 function jumpTo(type){
-  const sec = (type==='copyright'||type==='software') ? 'ip' : type;
-  const el = document.getElementById(sec);
-  if(el) el.scrollIntoView({behavior:'smooth'});
+  showView(type === 'copyright' || type === 'software' ? 'ip' : type);
+}
+
+function showView(name){
+  const key = name || 'dash';
+  $$('.view, .view-hero').forEach(function(el){
+    el.classList.toggle('on', el.getAttribute('data-view') === key);
+  });
+  $$('.nav-links a').forEach(function(a){
+    a.classList.toggle('on', a.getAttribute('data-view') === key);
+  });
+  closeDrawer();
+  window.scrollTo(0, 0);
+  if(window._open){ window._open = null; renderAll(); }
 }
 
 function renderIdentityClock(){
@@ -729,7 +740,7 @@ function renderList(type){
     const s = stDef(it.type, it.status);
     const open = window._open === it.id;
     const due = itemDueInfo(it);
-    h += '<div class="row" data-drop="item" data-id="' + it.id + '">' +
+    h += '<div class="row" data-id="' + it.id + '">' +
       '<div class="no">' + String(i+1).padStart(2,'0') + '</div>' +
       '<div class="main">' +
         '<div class="title row-open" data-act="toggle" data-id="' + it.id + '">' + esc(it.title) + '</div>' +
@@ -737,7 +748,6 @@ function renderList(type){
         (due ? '<div class="due-chip' + (due.near ? ' near' : '') + '">节点 ' + esc(due.d.date) +
                (due.left < 0 ? ' · 已过期' : (due.near ? ' · 还有 ' + due.left + ' 天' : '')) + '</div>' : '') +
         trackHTML(it.type, it.status) +
-        '<div class="drop-hint">拖拽文件到此处，登记为本条附件</div>' +
         '<div class="acts">' +
           '<button class="btn btn-ghost btn-sm" data-act="toggle" data-id="' + it.id + '">' + (open ? '收起' : '详情') + '</button>' +
           '<button class="btn btn-ghost btn-sm" data-act="edit" data-type="' + type + '" data-id="' + it.id + '">编辑</button>' +
@@ -1057,25 +1067,7 @@ function quickAdd(){
   toast('已录入「' + title + '」', 'check');
 }
 
-function attachFiles(itemId, fileList){
-  if(!fileList || !fileList.length) return;
-  let target = itemId ? DB.items.filter(function(x){ return x.id===itemId; })[0] : null;
-  if(!target){
-    target = DB.items.filter(function(x){ return x.id===window._lastItemId; })[0] ||
-             DB.items.slice().sort(function(a,b){ return (b.updatedAt||'') < (a.updatedAt||'') ? -1 : 1; })[0];
-  }
-  if(!target){ toast('请先创建一条成果', 'help'); return; }
-  target.fields = target.fields || {};
-  target.fields.materials = target.fields.materials || [];
-  Array.prototype.forEach.call(fileList, function(f){
-    target.fields.materials.push({ name: f.name, size: fmtSize(f.size), url: '' });
-    logAct('挂载资料 ' + f.name + ' → 《' + target.title + '》');
-  });
-  target.updatedAt = today();
-  window._lastItemId = target.id;
-  save(); renderAll();
-  toast('已挂上 ' + fileList.length + ' 份资料', 'folder');
-}
+function attachFiles(){ /* 拖拽附件已移除 */ }
 
 function resetDemo(){
   if(!confirm('重置会覆盖当前全部数据，建议先导出备份。确定重置？')) return;
@@ -1413,7 +1405,7 @@ function bindEvents(){
     if(act === 'import'){ $('#fileIn').click(); return; }
     if(act === 'import-file') return importJSON(t);
     if(act === 'burger'){ $('#drawer').classList.toggle('open'); return; }
-    if(act === 'drawer'){ closeDrawer(); return; }
+    if(act === 'view'){ e.preventDefault(); return showView(t.getAttribute('data-view')); }
     if(act === 'dismiss-alert') return dismissAlert();
     if(act === 'jump') return jumpTo(type);
     if(act === 'toggle') return toggleOpen(id);
@@ -1442,26 +1434,6 @@ function bindEvents(){
     if(e.key === 'Enter'){ e.preventDefault(); quickAdd(); }
   });
   $('#fileIn').addEventListener('change', function(){ importJSON(this); });
-
-  // 拖拽挂资料（仅成果行）
-  document.addEventListener('dragover', function(e){
-    const z = e.target.closest('[data-drop="item"]');
-    if(!z) return;
-    e.preventDefault();
-    z.classList.add('dropover');
-  });
-  document.addEventListener('dragleave', function(e){
-    const z = e.target.closest('[data-drop="item"]');
-    if(!z) return;
-    z.classList.remove('dropover');
-  });
-  document.addEventListener('drop', function(e){
-    const z = e.target.closest('[data-drop="item"]');
-    if(!z) return;
-    e.preventDefault();
-    z.classList.remove('dropover');
-    attachFiles(z.getAttribute('data-id'), e.dataTransfer.files);
-  });
 }
 
 /* ---------------- 启动 ---------------- */
@@ -1473,6 +1445,7 @@ document.addEventListener('DOMContentLoaded', function(){
   initProfile();
   bindEvents();
   renderAll();
+  showView((location.hash || '').replace('#','') || 'dash');
   tickClock();
   setInterval(tickClock, 1000);
 
