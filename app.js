@@ -1452,10 +1452,10 @@ function importJSON(input){
 
 /* ---------------- 简历墙 ---------------- */
 
-let R_OPT = { lang:'zh', fmt:'text', scope:'done', groupBy:'type' };
+let R_OPT = { lang:'zh', fmt:'text', scope:'done', groupBy:'type', skin:'s1' };
 
 function initSegments(){
-  [['#segLang','lang'],['#segFmt','fmt'],['#segScope','scope']].forEach(function(pair){
+  [['#segLang','lang'],['#segFmt','fmt'],['#segScope','scope'],['#segSkin','skin']].forEach(function(pair){
     $$(pair[0] + ' button').forEach(function(b){
       b.onclick = function(){
         $$(pair[0] + ' button').forEach(function(x){ x.classList.remove('on'); });
@@ -1653,7 +1653,7 @@ function buildResumeText(){
     out.push('══ 资料清单 / Materials ══', '');
     if(!list.length) out.push('（当前筛选条件下没有成果）');
     list.forEach(function(it, i){ out.push(materialLine(it, i+1)); out.push(''); });
-  } else if(R_OPT.groupBy === 'year'){
+  } else if(R_OPT.groupBy === 'year' || R_OPT.skin === 's4'){
     const years = {};
     items.forEach(function(it){
       const y = itemYear(it) || '未定年份';
@@ -1736,7 +1736,9 @@ function renderResume(){
     else h += '<div class="rcont">' + esc(ln) + '</div>';
   });
   closeSec();
-  $('#resumeOut').innerHTML = h || '<div class="rhead">' + esc(text) + '</div>';
+  const box = $('#resumeOut');
+  box.className = 'resume-out skin-' + (R_OPT.skin || 's1');
+  box.innerHTML = h || '<div class="rhead">' + esc(text) + '</div>';
 }
 
 function initProfile(){
@@ -1752,6 +1754,32 @@ function initProfile(){
 }
 function copyResume(){ copyText(buildResumeText()); }
 function downloadResume(){ downloadFile('科研成果汇总-' + today() + '.txt', buildResumeText()); }
+
+function downloadResumeHTML(){
+  const inner = $('#resumeOut').innerHTML;
+  const skin = R_OPT.skin || 's1';
+  const css = [
+    'body{margin:0;background:#FAF7F5;color:#213547;font-family:"MiSans","PingFang SC","Microsoft YaHei",sans-serif;}',
+    '.page{max-width:820px;margin:24px auto;background:#fff;border:1px solid #000;border-top:3px solid #000;padding:40px 44px;}',
+    '.rhead{font-size:13px;color:#666;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #E5E7EB;}',
+    '.rsec{display:flex;gap:20px;padding:16px 0;border-bottom:1px solid #E5E7EB;}',
+    '.rsec:last-child{border-bottom:none;}',
+    '.rsec h3{width:110px;flex:none;font-size:15px;font-weight:700;color:#000;margin:0;padding-left:12px;border-left:3px solid #000;}',
+    '.rbody{flex:1;min-width:0;}',
+    '.ritem{font-size:14.5px;line-height:1.85;padding:6px 0;white-space:pre-wrap;}',
+    '.rcont{font-size:13.5px;color:#333;line-height:1.75;padding:2px 0 2px 12px;white-space:pre-wrap;}',
+    skin === 's2' ? '.page{padding:24px 28px;}.rsec{display:block;padding:10px 0;}.rsec h3{width:auto;border:none;padding:0;font-size:14px;margin-bottom:6px;}.ritem{font-size:13px;line-height:1.55;padding:3px 0;}' : '',
+    skin === 's3' ? '.rsec h3{width:150px;}.ritem{font-size:15px;}' : '',
+    skin === 's4' ? '.rsec h3{width:80px;font-size:16px;}.rsec{align-items:flex-start;}' : '',
+    '@media print{body{background:#fff;}.page{border:none;margin:0;padding:0;}}'
+  ].join('\n');
+  const html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+    '<title>科研成果汇总 - ' + today() + '</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n' +
+    '<div class="page skin-' + skin + '">' + inner + '</div>\n</body>\n</html>\n';
+  downloadFile('科研成果汇总-' + today() + '.html', html, 'text/html;charset=utf-8');
+  toast('已下载 HTML 简历', 'check');
+}
 
 /* ---------------- 总渲染 ---------------- */
 
@@ -1801,6 +1829,7 @@ function bindEvents(){
     if(act === 'quick-add') return quickAdd();
     if(act === 'copy-resume') return copyResume();
     if(act === 'download-resume') return downloadResume();
+    if(act === 'download-resume-html') return downloadResumeHTML();
     if(act === 'print') return window.print();
     if(act === 'add-row') return addRow(t, t.getAttribute('data-key'));
     if(act === 'rm-row'){ const tr = t.closest('tr'); if(tr) tr.remove(); return; }
