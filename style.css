@@ -636,6 +636,29 @@ section.view.on{ min-height:calc(100vh - 56px); }
   .resume-out .rsec h3{ width:auto; }
 }
 
+/* 简历样式皮肤 */
+.resume-out.skin-s2{ padding:24px 28px; max-height:720px; }
+.resume-out.skin-s2 .rsec{ display:block; padding:10px 0; }
+.resume-out.skin-s2 .rsec h3{
+  width:auto; border-left:none; padding-left:0; margin-bottom:6px;
+  font-size:13px; letter-spacing:1px; color:var(--t-4);
+}
+.resume-out.skin-s2 .ritem{ font-size:13px; line-height:1.55; padding:3px 0; }
+.resume-out.skin-s2 .rcont{ font-size:12px; padding-left:0; }
+
+.resume-out.skin-s3 .rsec h3{ width:150px; border-left-width:4px; }
+.resume-out.skin-s3 .ritem{ font-size:15px; line-height:1.9; }
+.resume-out.skin-s3 .rbody{ padding-top:2px; }
+
+.resume-out.skin-s4{ }
+.resume-out.skin-s4 .rsec{ align-items:flex-start; }
+.resume-out.skin-s4 .rsec h3{
+  width:88px; font-size:18px; font-weight:700; border-left:none; padding-left:0;
+  border-bottom:2px solid var(--t-1); padding-bottom:4px;
+}
+.resume-out.skin-s4 .ritem{ padding:8px 0; border-bottom:1px dotted var(--line-2); }
+.resume-out.skin-s4 .ritem:last-child{ border-bottom:none; }
+
 /* ---------- 弹窗 ---------- */
 .mask{
   position:fixed; inset:0; z-index:40; background:rgba(34,36,39,.5);
