@@ -224,6 +224,7 @@ function loadDB(){
 function save(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(DB)); }
   catch(e){ toast('保存失败：' + e.message, 'help'); }
+  if(typeof scheduleHubPush === 'function') scheduleHubPush();
 }
 
 function logAct(text){
@@ -1220,50 +1221,6 @@ function fieldHTML(fd, v){
          (fd.hint ? '<div class="hint">' + esc(fd.hint) + '</div>' : '') + '</div>';
 }
 
-function openEditor(type, id){
-  const it = id ? DB.items.filter(function(x){ return x.id===id; })[0] : null;
-  const T = TYPES[type];
-  const f = it ? (it.fields||{}) : {};
-  const TIME_KEYS = ['submitDate','acceptDate','publishDate','filingDate','pubDate','grantDate','completionDate','regDate','releaseDate','planDate','year','nextAction'];
-  let h = '<div class="mh"><h3>' + (it ? '编辑' : '新建') + T.label + '</h3>' +
-          '<span class="en">' + T.en + '</span>' +
-          '<button data-act="close-modal" aria-label="关闭">×</button></div>' +
-          '<div class="grid2">';
-
-  h += '<div class="form-sec">基本信息</div>';
-  h += '<div class="field"><label>当前状态</label><select data-k="__status">' +
-       T.statuses.map(function(s){
-         return '<option value="' + s.k + '"' + (s.k === (it?it.status:'') ? ' selected' : '') + '>' + esc(s.n) + '</option>';
-       }).join('') + '</select></div>';
-  h += '<div class="field"><label>记录创建</label><input data-k="__createdAt" type="date" value="' + esc(it ? (it.createdAt||today()) : today()) + '"></div>';
-  T.fields.forEach(function(fd){
-    if(fd.t === 'rows' || TIME_KEYS.indexOf(fd.k) >= 0) return;
-    if(fd.k === 'nextAction' || fd.k === 'planDate') return;
-    h += fieldHTML(fd, f[fd.k]);
-  });
-
-  h += '<div class="form-sec">流程与时间</div>';
-  T.fields.forEach(function(fd){
-    if(TIME_KEYS.indexOf(fd.k) >= 0 || fd.k === 'nextAction' || fd.k === 'planDate') h += fieldHTML(fd, f[fd.k]);
-  });
-
-  h += '<div class="form-sec">资料与备注</div>';
-  T.fields.forEach(function(fd){
-    if(fd.t === 'rows') h += fieldHTML(fd, f[fd.k]);
-    else if(fd.k === 'note') h += fieldHTML(fd, f[fd.k]);
-  });
-
-  h += '</div><div class="mf">' +
-       '<button class="btn btn-primary" data-act="save-item" data-type="' + type + '"' + (id ? ' data-id="' + id + '"' : '') + '>保存</button>' +
-       '<button class="btn btn-ghost" data-act="close-modal">取消</button></div>';
-
-  $('#modal').innerHTML = h;
-  $('#mask').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  const first = $('#modal input[data-k="title"]');
-  if(first) setTimeout(function(){ first.focus(); }, 60);
-}
-
 function closeModal(){
   $('#mask').classList.remove('open');
   document.body.style.overflow = '';
@@ -1796,6 +1753,279 @@ function renderAll(){
   renderResume();
 }
 
+/* ---------------- Supabase · GitHub 登录 + 成果台账云端（与主站同账号，数据分表） ---------------- */
+const SUPABASE_URL = 'https://vbrvfpoqgklezvykmzvn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_HUsypDUn_0t3kyVhQZ5nrw_ESfLMZ3P';
+const RH_TABLE = 'user_research_hub';
+const sbConfigured = SUPABASE_URL && SUPABASE_ANON_KEY
+  && !String(SUPABASE_URL).includes('YOUR_PROJECT')
+  && !String(SUPABASE_ANON_KEY).includes('YOUR_ANON');
+let sbClient = null;
+let authUser = null;
+let cloudSyncTimer = null;
+let wantLoginToast = false;
+
+if (sbConfigured && typeof supabase !== 'undefined') {
+  try { sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+  catch (e) { console.warn('Supabase init failed', e); }
+}
+
+function updateAuthUI(){
+  const btn = $('#btnAuth');
+  if(!btn) return;
+  if(!sbConfigured){ btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  if(authUser){
+    const name = (authUser.user_metadata && (authUser.user_metadata.user_name || authUser.user_metadata.full_name))
+      || authUser.email || '已登录';
+    btn.textContent = name + ' · 退出';
+    btn.title = '已登录，成果台账云端同步（与主站同账号，数据分开）';
+  } else {
+    btn.textContent = '登录同步';
+    btn.title = 'GitHub 登录后多设备同步成果台账（未登录仍用本地）';
+  }
+}
+
+async function onAuthClick(){
+  if(!sbClient) return toast('云同步未配置', 'help');
+  if(authUser){
+    await sbClient.auth.signOut();
+    authUser = null;
+    updateAuthUI();
+    toast('已退出，仍使用本地数据', 'check');
+    return;
+  }
+  try {
+    wantLoginToast = true;
+    await sbClient.auth.signInWithOAuth({
+      provider: 'github',
+      options: { redirectTo: location.origin + location.pathname }
+    });
+  } catch(e){
+    wantLoginToast = false;
+    toast('登录失败: ' + (e.message || e), 'warn');
+  }
+}
+
+function itemKey(it){
+  if(!it) return '';
+  const doi = ((it.fields && it.fields.doi) || '').toLowerCase().replace(/^https?:\/\/doi.org\//,'').trim();
+  if(doi) return 'doi:' + doi;
+  const no = (it.fields && (it.fields.applicationNo || it.fields.regNo) || '').trim();
+  if(no) return 'no:' + no.toLowerCase();
+  const t = (it.title || '').toLowerCase().replace(/\s+/g,' ').trim();
+  return t ? it.type + ':' + t : '';
+}
+
+function mergeItems(localList, remoteList){
+  const map = new Map();
+  (remoteList || []).forEach(function(it){
+    const k = itemKey(it);
+    if(k) map.set(k, Object.assign({}, it));
+  });
+  (localList || []).forEach(function(it){
+    const k = itemKey(it);
+    if(!k){ map.set('id:' + (it.id||Math.random()), Object.assign({}, it)); return; }
+    const r = map.get(k);
+    if(!r){ map.set(k, Object.assign({}, it)); return; }
+    const merged = Object.assign({}, r, it);
+    const lt = it.timeline || [], rt = r.timeline || [];
+    merged.timeline = lt.length >= rt.length ? lt : rt;
+    if(it.updatedAt > (r.updatedAt || '')) merged.updatedAt = it.updatedAt;
+    map.set(k, merged);
+  });
+  return Array.from(map.values());
+}
+
+async function pushHubToCloud(){
+  if(!sbClient || !authUser) return;
+  try {
+    const { error } = await sbClient.from(RH_TABLE).upsert({
+      user_id: authUser.id,
+      payload: DB,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if(error) throw error;
+  } catch(e){
+    console.warn('hub push failed', e);
+    if(/not find|schema|relation/i.test(e.message || '')){
+      toast('云端表缺失：请在 Supabase 执行 user_research_hub 建表 SQL', 'warn');
+    }
+  }
+}
+
+function scheduleHubPush(){
+  if(!authUser) return;
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(pushHubToCloud, 900);
+}
+
+async function pullHubFromCloud(opts){
+  if(!sbClient || !authUser) return;
+  const silent = !!(opts && opts.silent);
+  const say = function(m, t){ if(!silent) toast(m, t); };
+  try {
+    const { data, error } = await sbClient.from(RH_TABLE)
+      .select('payload,updated_at').eq('user_id', authUser.id).maybeSingle();
+    if(error) throw error;
+    const remote = data && data.payload;
+    if(!remote || !Array.isArray(remote.items)){
+      await pushHubToCloud();
+      say('已将本地成果同步到云端', 'check');
+      return;
+    }
+    DB.items = mergeItems(DB.items, remote.items || []);
+    DB.deadlines = (remote.deadlines && remote.deadlines.length) ? remote.deadlines : DB.deadlines;
+    if(remote.profile && remote.profile.name) DB.profile = Object.assign({}, DB.profile, remote.profile);
+    save();
+    renderAll();
+    say('云端成果已合并到本地', 'check');
+  } catch(e){
+    console.warn('hub pull failed', e);
+    say('云端同步失败，仍可使用本地数据', 'warn');
+  }
+}
+
+async function initSupabaseAuth(){
+  if(!sbClient){ updateAuthUI(); return; }
+  try {
+    const { data } = await sbClient.auth.getSession();
+    authUser = (data && data.session && data.session.user) || null;
+    updateAuthUI();
+    if(authUser) await pullHubFromCloud({ silent: true });
+    sbClient.auth.onAuthStateChange(async function(event, session){
+      authUser = (session && session.user) || null;
+      updateAuthUI();
+      if(event === 'SIGNED_IN' && authUser){
+        const show = wantLoginToast;
+        wantLoginToast = false;
+        await pullHubFromCloud({ silent: !show });
+      }
+    });
+  } catch(e){
+    console.warn('auth init', e);
+    updateAuthUI();
+  }
+}
+
+/* ---------------- OpenAlex 查引用（同主站） ---------------- */
+function withPolitePool(url){
+  if(url.indexOf('api.openalex.org') === -1) return url;
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + 'mailto=citeglow%40users.noreply.github.com';
+}
+
+async function oaApiGet(url){
+  const target = withPolitePool(url);
+  const sep = target.indexOf('?') === -1 ? '?' : '&';
+  const bust = target + sep + '_t=' + Date.now();
+  async function doFetch(u){
+    const r = await fetch(u, { cache: 'no-store' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+  try {
+    return await doFetch(bust);
+  } catch(e){
+    const proxies = [
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent(bust),
+      'https://corsproxy.io/?' + encodeURIComponent(bust)
+    ];
+    for(let i = 0; i < proxies.length; i++){
+      try { return await doFetch(proxies[i]); } catch(e2){ /* next */ }
+    }
+    throw e;
+  }
+}
+
+function fillPaperFormFromWork(w){
+  const set = function(k, v){
+    const el = $('#modal [data-k="' + k + '"]');
+    if(el && v != null && v !== '') el.value = v;
+  };
+  const authors = (w.authorships || []).map(function(a){
+    return (a.author && a.author.display_name) || '';
+  }).filter(Boolean);
+  const loc = w.primary_location || {};
+  const src = loc.source || {};
+  set('title', w.title || '');
+  set('doi', (w.doi || '').replace(/^https?:\/\/doi.org\//, ''));
+  set('authors', authors.join(', '));
+  set('authorsEn', authors.join(', '));
+  set('year', w.publication_year || '');
+  set('venue', src.display_name || '');
+  set('kw', (w.concepts || []).slice(0, 5).map(function(c){ return c.display_name; }).join('; '));
+  toast('已从 OpenAlex 填入题录', 'check');
+}
+
+async function openAlexLookup(){
+  const q = ($('#oaQuery') && $('#oaQuery').value || '').trim();
+  if(!q){ toast('请输入 DOI 或论文标题', 'help'); return; }
+  toast('查询 OpenAlex…', 'check');
+  try {
+    let w = null;
+    if(/^10\./.test(q) || /doi.org\//i.test(q)){
+      const doi = q.replace(/^https?:\/\/doi.org\//i, '').trim();
+      w = await oaApiGet('https://api.openalex.org/works/doi:' + encodeURIComponent(doi));
+    } else {
+      const list = await oaApiGet('https://api.openalex.org/works?search=' + encodeURIComponent(q) + '&per-page=1');
+      w = list && list.results && list.results[0];
+    }
+    if(!w) throw new Error('未找到匹配文献');
+    fillPaperFormFromWork(w);
+  } catch(e){
+    toast('查询失败：' + (e.message || e), 'warn');
+  }
+}
+
+function openEditor(type, id){
+  const it = id ? DB.items.filter(function(x){ return x.id===id; })[0] : null;
+  const T = TYPES[type];
+  const f = it ? (it.fields||{}) : {};
+  const TIME_KEYS = ['submitDate','acceptDate','publishDate','filingDate','pubDate','grantDate','completionDate','regDate','releaseDate','planDate','year','nextAction'];
+  let h = '<div class="mh"><h3>' + (it ? '编辑' : '新建') + T.label + '</h3>' +
+          '<span class="en">' + T.en + '</span>' +
+          '<button data-act="close-modal" aria-label="关闭">×</button></div>';
+
+  if(type === 'paper'){
+    h += '<div class="oa-bar"><input id="oaQuery" placeholder="DOI 或论文标题（OpenAlex 自动填题录）" value="' + esc(f.doi || '') + '">' +
+         '<button class="btn btn-ghost btn-sm" data-act="oa-lookup">查询 OpenAlex</button></div>';
+  }
+
+  h += '<div class="grid2">';
+  h += '<div class="form-sec">基本信息</div>';
+  h += '<div class="field"><label>当前状态</label><select data-k="__status">' +
+       T.statuses.map(function(s){
+         return '<option value="' + s.k + '"' + (s.k === (it?it.status:'') ? ' selected' : '') + '>' + esc(s.n) + '</option>';
+       }).join('') + '</select></div>';
+  h += '<div class="field"><label>记录创建</label><input data-k="__createdAt" type="date" value="' + esc(it ? (it.createdAt||today()) : today()) + '"></div>';
+  T.fields.forEach(function(fd){
+    if(fd.t === 'rows' || TIME_KEYS.indexOf(fd.k) >= 0) return;
+    if(fd.k === 'nextAction' || fd.k === 'planDate') return;
+    h += fieldHTML(fd, f[fd.k]);
+  });
+
+  h += '<div class="form-sec">流程与时间</div>';
+  T.fields.forEach(function(fd){
+    if(TIME_KEYS.indexOf(fd.k) >= 0 || fd.k === 'nextAction' || fd.k === 'planDate') h += fieldHTML(fd, f[fd.k]);
+  });
+
+  h += '<div class="form-sec">资料与备注</div>';
+  T.fields.forEach(function(fd){
+    if(fd.t === 'rows') h += fieldHTML(fd, f[fd.k]);
+    else if(fd.k === 'note') h += fieldHTML(fd, f[fd.k]);
+  });
+
+  h += '</div><div class="mf">' +
+       '<button class="btn btn-primary" data-act="save-item" data-type="' + type + '"' + (id ? ' data-id="' + id + '"' : '') + '>保存</button>' +
+       '<button class="btn btn-ghost" data-act="close-modal">取消</button></div>';
+
+  $('#modal').innerHTML = h;
+  $('#mask').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const first = $('#modal input[data-k="title"]');
+  if(first) setTimeout(function(){ first.focus(); }, 60);
+}
+
 /* ---------------- 事件委托 ---------------- */
 
 function bindEvents(){
@@ -1809,6 +2039,8 @@ function bindEvents(){
     if(act === 'export') return exportJSON();
     if(act === 'import'){ $('#fileIn').click(); return; }
     if(act === 'import-file') return importJSON(t);
+    if(act === 'auth') return onAuthClick();
+    if(act === 'oa-lookup') return openAlexLookup();
     if(act === 'burger'){ $('#drawer').classList.toggle('open'); return; }
     if(act === 'view'){ e.preventDefault(); return showView(t.getAttribute('data-view')); }
     if(act === 'dismiss-alert') return dismissAlert();
@@ -1902,6 +2134,7 @@ document.addEventListener('DOMContentLoaded', function(){
   showView((location.hash || '').replace('#','') || 'dash');
   tickClock();
   setInterval(tickClock, 1000);
+  initSupabaseAuth();
 
   $('#mask').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
