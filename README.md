@@ -54,6 +54,30 @@
 - 首次打开会预置 6 条软著（对应 `Software-copyright/` 里的 6 份说明文档）
   和 1 条软件成果，可随意修改或删除
 
+## 云同步（GitHub 登录，与主站同账号）
+
+与 citeglow 主站共用同一 Supabase / GitHub 登录；**成果台账单独存表** `user_research_hub`，不与主站论文列表混用。
+
+首次需在 Supabase SQL Editor 执行：
+
+```sql
+create table if not exists public.user_research_hub (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  payload jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.user_research_hub enable row level security;
+create policy "Users can read own hub" on public.user_research_hub for select using (auth.uid() = user_id);
+create policy "Users can insert own hub" on public.user_research_hub for insert with check (auth.uid() = user_id);
+create policy "Users can update own hub" on public.user_research_hub for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+```
+
+未登录仍只使用本地 localStorage。
+
+## OpenAlex 查引用
+
+编辑「小论文」时，顶部输入 DOI 或标题 →「查询 OpenAlex」，自动填作者 / 期刊 / 年份 / DOI。
+
 ## 倒计时 / 提醒
 
 「添加节点」录入截稿日、答辩日、专利答复期限等。7 天内到期会在页面顶部出提醒条，
