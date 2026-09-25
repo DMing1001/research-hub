@@ -569,6 +569,17 @@ section.view.on{ min-height:calc(100vh - 56px); }
 }
 .tpl-row button:hover{ border-color:var(--t-1); color:var(--t-1); }
 
+/* OpenAlex 查询条 */
+.oa-bar{
+  display:flex; gap:var(--sp-2); align-items:center; flex-wrap:wrap;
+  margin:0 0 var(--sp-5); padding:var(--sp-3);
+  border:1px solid var(--line-2); background:var(--bg);
+}
+.oa-bar input{
+  flex:1; min-width:200px; width:auto; padding:8px 10px; font-size:14px;
+  border-color:var(--line-2);
+}
+
 /* ---------- 倒计时 ---------- */
 .dl{ display:flex; align-items:center; gap:var(--sp-5); padding:var(--sp-5) 0; border-bottom:1px solid var(--line-2); }
 .dl .d{ font-size:32px; font-weight:700; color:var(--t-1); font-variant-numeric:tabular-nums; line-height:1; width:84px; flex:none; }
