@@ -28,6 +28,7 @@
       <a href="#" data-act="view" data-view="resume">简历墙</a>
     </div>
     <div class="nav-right">
+      <button class="btn btn-ghost btn-sm" id="btnAuth" data-act="auth" style="display:none" title="GitHub 登录后同步成果台账">登录同步</button>
       <button class="btn btn-ghost btn-sm" data-act="export">导出</button>
       <button class="btn btn-ghost btn-sm" data-act="import">导入</button>
       <button class="burger" data-act="burger" aria-label="菜单">☰</button>
@@ -243,6 +244,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
