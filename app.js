@@ -196,7 +196,39 @@ let DB = null;
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 function today(){ return new Date().toISOString().slice(0,10); }
 
-function blank(){ return { version:1, items:[], deadlines:[], profile:{}, activity:[], seedDone:false, seedExtrasDone:false, seedExtrasRev:0 }; }
+function blank(){ return { version:1, items:[], deadlines:[], profile:{}, activity:[], seedDone:false, seedExtrasDone:false, seedExtrasRev:DEMO_SEED_REV }; }
+
+/* 公开演示种子版本：仅虚构打星数据，不含真实姓名 / 学号 / 证书号 / 本机路径 */
+const DEMO_SEED_REV = 4;
+
+/* 旧版曾把真实成果硬编码进前端；升级时按结构特征清理本机预填项（源码中不出现真实姓名/证书号） */
+const LEGACY_SEED_RE = /[A-Za-z]:\\|材料汇总编号|材料汇总软著/;
+const LEGACY_SEED_TITLES = [
+  '堤顶高程计算软件', '桥墩冲刷计算软件', '桥梁壅水计算软件',
+  '水位流量关系计算软件', '堤防稳定分析软件', '堤防渗流计算软件',
+  'CiteGlow 水利计算工具集'
+];
+
+function isLegacySeedItem(it){
+  if(!it) return false;
+  if(LEGACY_SEED_TITLES.indexOf(it.title) !== -1) return true;
+  if(it.title && String(it.title).indexOf('[演示]') === 0) return false;
+  const fields = it.fields || {};
+  const blob = [
+    fields.title || '', fields.note || '', fields.repoUrl || '',
+    fields.regNo || '', fields.applicationNo || ''
+  ].join(' ');
+  if(LEGACY_SEED_RE.test(blob)) return true;
+  const mats = []
+    .concat(fields.materials || [], fields.mats || [], it.materials || [])
+    .concat((it.timeline || []).map(function(t){ return t && t.text || ''; }));
+  for(var i=0;i<mats.length;i++){
+    var m = mats[i];
+    var s = (typeof m === 'string') ? m : ((m && m.url) || '') + ' ' + ((m && m.name) || '');
+    if(LEGACY_SEED_RE.test(s)) return true;
+  }
+  return false;
+}
 
 function loadDB(){
   try{
@@ -208,16 +240,24 @@ function loadDB(){
   DB.deadlines = Array.isArray(DB.deadlines) ? DB.deadlines : [];
   DB.profile   = DB.profile || {};
   DB.activity  = Array.isArray(DB.activity) ? DB.activity : [];
-  if(!DB.seedDone){ seed(); DB.seedDone = true; }
-  // rev=3：重建正式成果（补全时间轴日期），保留演示种子
-  if(DB.seedExtrasRev !== 3){
-    DB.items = DB.items.filter(function(it){
-      return it.type === 'software' || (it.type === 'copyright' && it.status === 'preparing');
-    });
+  // 清理旧版硬编码的真实成果预填（导入的真实备份会在 importJSON 中标记 rev，避免被误删）
+  if((DB.seedExtrasRev || 0) < DEMO_SEED_REV){
+    const before = DB.items.length;
+    DB.items = DB.items.filter(function(it){ return !isLegacySeedItem(it); });
+    /* 旧版会把默认姓名写进 profile；升级时重置，避免源码/本机残留真实身份 */
+    DB.profile = {};
+    if(before !== DB.items.length){
+      logAct('已清除历史预填演示数据（改为仅虚构演示）');
+    }
     DB.seedExtrasDone = false;
+    DB.seedExtrasRev = DEMO_SEED_REV;
   }
+  if(!DB.seedDone){ seed(); DB.seedDone = true; }
   if(!DB.seedExtrasDone){ seedExtras(); }
-  if(!DB.profile.name && !DB.profile.nameEn){ DB.profile.name = '邓明昊'; DB.profile.nameEn = 'Minghao Deng'; }
+  if(!DB.profile.name && !DB.profile.nameEn){
+    DB.profile.name = '演示研究者';
+    DB.profile.nameEn = 'Demo Researcher';
+  }
   save();
 }
 
@@ -233,217 +273,83 @@ function logAct(text){
   if(DB.activity.length > 200) DB.activity.length = 200;
 }
 
+/* 公开演示种子：仅虚构条目，敏感字段一律打星；不含任何真实个人信息 */
 function seed(){
   const base = { status:'', timeline:[], materials:[], createdAt:today(), updatedAt:today() };
-  const docs = [
-    ['堤顶高程计算软件',      '01-堤顶高程计算-说明文档.md',      'GB 50286-2013 附录 C 莆田试验站公式'],
-    ['桥墩冲刷计算软件',      '02-桥墩冲刷计算-说明文档.md',      'SL/T 808-2025 附录 A.3.5 · JTG C30 · TB 10017'],
-    ['桥梁壅水计算软件',      '03-桥梁壅水计算-说明文档.md',      'JTG C30-2015 · TB 10017 · SL/T 808-2025 附录 A.2'],
-    ['水位流量关系计算软件',  '04-水位流量关系计算-说明文档.md',  'Manning 公式 · 宽顶堰 / 实用堰 / 薄壁堰'],
-    ['堤防稳定分析软件',      '05-堤防稳定分析-说明文档.md',      '瑞典圆弧法 · 毕肖普法 · GB 50286-2013'],
-    ['堤防渗流计算软件',      '06-堤防渗流计算-说明文档.md',      '杜普伊特公式 · 勃莱 / 莱恩爬行法 · GB 50286-2013']
-  ];
-  docs.forEach(function(d){
-    DB.items.push(Object.assign({}, base, {
-      id: uid(), type:'copyright',
-      title: d[0], status:'preparing',
-      fields: {
-        title:d[0], version:'V1.0', techStack:'HTML / CSS / JavaScript（单文件，浏览器直接运行）',
-        note:'规范依据：' + d[2],
-        materials:[{name:'说明文档', url:'Software-copyright/' + d[1]}]
+  const demo = [
+    {
+      id: uid(), type:'paper', status:'published',
+      title:'[演示] 基于水文—水动力耦合的流域多目标优化研究',
+      fields:{
+        title:'[演示] 基于水文—水动力耦合的流域多目标优化研究',
+        authors:'*演示作者, *合作者, *通讯作者',
+        authorsEn:'*Demo Author, *Collaborator',
+        myRank:'第一作者',
+        venue:'*演示期刊', venueEn:'*Demo Journal',
+        venueAbbr:'DEMO', partition:'JCR Q*',
+        doi:'10.0000/demo.2026.0001',
+        submitDate:'2026-01-10', acceptDate:'2026-03-02', publishDate:'2026-05-15',
+        kw:'demo; sample; multi-objective',
+        note:'公开演示数据（打星脱敏）。真实成果请在本机用「导入」加载，不会写入网页源码。',
+        materials:[{name:'录用证明（演示）.pdf', url:'demo/acceptance-demo.pdf'}]
       },
-      timeline:[{date:today(), text:'建立条目 · 状态「材料准备」'}]
-    }));
-  });
-  DB.items.push(Object.assign({}, base, {
-    id: uid(), type:'software',
-    title:'CiteGlow 水利计算工具集', status:'released',
-    fields:{
-      title:'CiteGlow 水利计算工具集', titleEn:'CiteGlow Hydraulic Toolkit',
-      techStack:'原生 HTML / CSS / JavaScript · Chart.js · Vercel Serverless',
-      repoUrl:'https://github.com/DMing1001/water-tools',
-      liveUrl:'https://citeglow.com/water-tools/',
-      role:'独立开发', releaseDate:'2026-08-01',
-      scale:'6 个计算模块 · 覆盖堤防 / 桥梁 / 水力计算',
-      materials:[{name:'线上地址', url:'https://citeglow.com/water-tools/'}]
+      timeline:[{date:today(), text:'演示条目 · 已发表'}]
     },
-    timeline:[{date:today(), text:'建立条目 · 状态「已发布」'}]
-  }));
+    {
+      id: uid(), type:'patent', status:'granted',
+      title:'[演示] 一种流域规划多目标选址方法',
+      fields:{
+        title:'[演示] 一种流域规划多目标选址方法',
+        patentType:'发明专利',
+        applicationNo:'***********', grantNo:'***********',
+        applicants:'*演示单位',
+        inventors:'*甲，*乙，*丙', myRank:'第二发明人',
+        filingDate:'2024-03-12',
+        note:'公开演示数据（打星脱敏）。',
+        materials:[{name:'专利证书（演示）.pdf', url:'demo/patent-demo.pdf'}]
+      },
+      timeline:[{date:'2025-08-20', text:'演示条目 · 已授权'}]
+    },
+    {
+      id: uid(), type:'copyright', status:'certified',
+      title:'[演示] 流域分析辅助软件',
+      fields:{
+        title:'[演示] 流域分析辅助软件', version:'V1.0',
+        regNo:'2026SR******',
+        filingDate:'2026-01-05', regDate:'2026-03-01',
+        techStack:'Python / 桌面端',
+        myRank:'第一著作权人',
+        note:'公开演示数据（打星脱敏）。',
+        materials:[{name:'软著证书（演示）.pdf', url:'demo/copyright-demo.pdf'}]
+      },
+      timeline:[{date:today(), text:'演示条目 · 已下证'}]
+    },
+    {
+      id: uid(), type:'software', status:'released',
+      title:'CiteGlow 水利计算工具集（公开产品）',
+      fields:{
+        title:'CiteGlow 水利计算工具集（公开产品）',
+        titleEn:'CiteGlow Hydraulic Toolkit',
+        techStack:'原生 HTML / CSS / JavaScript',
+        liveUrl:'https://citeglow.com/water-tools/',
+        role:'站点公开工具', releaseDate:'2026-08-01',
+        scale:'覆盖堤防 / 桥梁 / 水力计算等模块',
+        note:'线上公开产品演示，不含个人学术台账。',
+        materials:[{name:'线上地址', url:'https://citeglow.com/water-tools/'}]
+      },
+      timeline:[{date:today(), text:'演示条目 · 已发布'}]
+    }
+  ];
+  demo.forEach(function(o){ DB.items.push(Object.assign({}, base, o)); });
 }
 
-/* 真实成果预填 — 对照 E:\学术成果-材料汇总\主要成果汇总.xlsx
-   不改动上方 7 条演示种子。rev=2：仅收录材料汇总中的正式成果 */
+/* 旧版 seedExtras 曾预填真实成果；现改为与 seed 合并的演示入口 */
 function seedExtras(){
-  const base = { timeline:[], materials:[], createdAt:today(), updatedAt:today() };
-  function push(o){ DB.items.push(Object.assign({}, base, o)); }
-
-  /* ---- 期刊论文（主要成果汇总 · 论文表）---- */
-  push({
-    id: uid(), type:'paper', status:'published',
-    title:'A Multi-Objective Optimization Framework for Check Dam Siting Integrating GIS, a Hydrological–Hydrodynamic Coupling Model, and NSGA-II',
-    fields:{
-      title:'A Multi-Objective Optimization Framework for Check Dam Siting Integrating GIS, a Hydrological–Hydrodynamic Coupling Model, and NSGA-II',
-      authors:'Minghao Deng, Zhanbin Li, Wen Wang, Jiao Zhang, Ke Xiang, Yunxian Wang',
-      authorsEn:'Minghao Deng, Zhanbin Li, Wen Wang, Jiao Zhang, Ke Xiang, Yunxian Wang',
-      myRank:'第一作者',
-      venue:'Journal of Hydrology', venueEn:'Journal of Hydrology',
-      venueAbbr:'JOH', partition:'JCR Q1',
-      doi:'WOS:001761165600001',
-      submitDate:'2025-11-01', acceptDate:'2026-03-15', publishDate:'2026-06-20',
-      kw:'check dam; siting; GIS; hydrological–hydrodynamic coupling; NSGA-II; multi-objective optimization',
-      note:'材料汇总编号 1。文件：00论文\\Journal of Hydrology\\',
-      materials:[
-        {name:'JOH论文.pdf', url:'E:\\学术成果-材料汇总\\00论文\\Journal of Hydrology\\JOH论文.pdf'},
-        {name:'论文录用证明.pdf', url:'E:\\学术成果-材料汇总\\00论文\\Journal of Hydrology\\论文录用证明.pdf'}
-      ]
-    },
-    timeline:[{date:today(), text:'对照材料汇总建档 · JOH · WOS:001761165600001'}]
-  });
-  push({
-    id: uid(), type:'paper', status:'published',
-    title:'Mechanical enhancement and microstructural evolution of fiber–binder stabilized loess: experimental evaluation and multi-objective mix design optimization',
-    fields:{
-      title:'Mechanical enhancement and microstructural evolution of fiber–binder stabilized loess: experimental evaluation and multi-objective mix design optimization',
-      authors:'Minghao Deng, Shaobo Xue, Wen Wang, Zhanbin Li, Xiang Chen',
-      authorsEn:'Minghao Deng, Shaobo Xue, Wen Wang, Zhanbin Li, Xiang Chen',
-      myRank:'第一作者',
-      venue:'Materials & Design', venueEn:'Materials & Design',
-      venueAbbr:'MD', partition:'JCR Q2',
-      doi:'WOS:001633849200004',
-      submitDate:'2025-12-10', acceptDate:'2026-05-08', publishDate:'2026-07-01',
-      kw:'loess; fiber–binder; microstructure; multi-objective mix design',
-      note:'材料汇总编号 3。文件：00论文\\Materials & Design\\',
-      materials:[
-        {name:'MD.pdf', url:'E:\\学术成果-材料汇总\\00论文\\Materials & Design\\MD.pdf'},
-        {name:'论文录用通知-03.pdf', url:'E:\\学术成果-材料汇总\\00论文\\Materials & Design\\论文录用通知-03.pdf'}
-      ]
-    },
-    timeline:[{date:today(), text:'对照材料汇总建档 · Materials & Design · WOS:001633849200004'}]
-  });
-  push({
-    id: uid(), type:'paper', status:'accepted',
-    title:'Geometric Optimization of a Vertical-Shaft Spiral Spillway Tunnel Based on a Kriging Surrogate Model',
-    fields:{
-      title:'Geometric Optimization of a Vertical-Shaft Spiral Spillway Tunnel Based on a Kriging Surrogate Model',
-      myRank:'第一作者',
-      venue:'Journal of Hydrodynamics', venueEn:'Journal of Hydrodynamics',
-      partition:'JCR Q3',
-      acceptDate:'2026-04-20',
-      note:'材料汇总编号 2。台账中作者/WOS 暂空，请在条目里补全。',
-      materials:[{name:'录用证明材料.pdf', url:'E:\\学术成果-材料汇总\\00论文\\录用证明材料.pdf'}]
-    },
-    timeline:[{date:today(), text:'对照材料汇总建档 · Journal of Hydrodynamics'}]
-  });
-
-  /* ---- 发明专利（主要成果汇总 · 专利表）---- */
-  const patents = [
-    {
-      status:'granted', title:'一种以防洪和经济性为目标的淤地坝布设位置选取方法',
-      applicationNo:'2023113137800', filingDate:'2023-10-11', grantDate:'2024-06-18',
-      inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
-      grantNo:'2023113137800',
-      note:'材料汇总编号 1 · 已授权。证书/年费：01专利\\一种以防洪和经济性…\\',
-      timeline:[{date:'2024-06-18', text:'授权'}],
-      mats:[
-        {name:'发明专利证书', url:'E:\\学术成果-材料汇总\\01专利\\一种以防洪和经济性为目标的淤地坝布设位置选取方法\\PCN230010406-发明专利证书.pdf'},
-        {name:'授权通知书', url:'E:\\学术成果-材料汇总\\01专利\\一种以防洪和经济性为目标的淤地坝布设位置选取方法\\2023113137800授权通知书.pdf'}
-      ]
-    },
-    {
-      status:'subst', title:'一种以水土流失治理效益和建设成本为目标的淤地坝布设方法',
-      applicationNo:'2023116593612', filingDate:'2023-12-05',
-      inventors:'王雯，邓明昊，薛涛', myRank:'第二发明人',
-      note:'材料汇总编号 2 · 审查中。以布设位置与设计淤积年限为决策因子，拦沙量/淤地效益/建设成本多目标。',
-      timeline:[{date:'2024-08-01', text:'进入实质审查'}],
-      mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2024-一种以水土流失治理效益和建设成本为目标的淤地坝布设方法\\PCN230010266-发明专利申请进入实质审查阶段通知书.pdf'}]
-    },
-    {
-      status:'subst', title:'一种基于水文水动力耦合模型的淤地坝选址方法',
-      applicationNo:'2024112719156', filingDate:'2024-09-11',
-      inventors:'王雯，邓明昊，沈荣建', myRank:'第二发明人',
-      note:'材料汇总编号 3 · 审查中。GIS+水文+水动力+代理模型+多目标；PCN24009062。',
-      timeline:[{date:'2025-02-10', text:'进入实质审查'}],
-      mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2024-一种基于水文水动力耦合模型的淤地坝选址方法\\03-PCN24009062-发明专利申请进入实质审查阶段通知书.pdf'}]
-    },
-    {
-      status:'subst', title:'一种综合自然因素与社会经济因素的水土流失治理优先级的评定方法',
-      applicationNo:'202511291194X', filingDate:'2025-09-10',
-      inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
-      note:'材料汇总编号 4 · 审查中。PCN250011966。',
-      timeline:[{date:'2026-01-15', text:'进入实质审查'}],
-      mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2025-一种综合自然因素与社会经济因素的水土流失治理优先级的评定方法\\01-PCN250011966-发明专利申请进入实质审查阶段通知书.pdf'}]
-    },
-    {
-      status:'subst', title:'一种综合梯田灌溉的可蓄水淤地坝选址方法与建设优化方法',
-      applicationNo:'2025115613393', filingDate:'2025-10-29',
-      inventors:'王雯，邓明昊，李占斌', myRank:'第二发明人',
-      note:'材料汇总编号 5 · 审查中。PCN250015200。',
-      timeline:[{date:'2026-03-01', text:'进入实质审查'}],
-      mats:[{name:'实质审查通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2025-一种综合考虑梯田分布的可蓄水淤地坝选址方法\\PCN250015200-发明专利申请进入实质审查阶段通知书.pdf'}]
-    },
-    {
-      status:'accepted', title:'一种考虑宏微观性能协同响应的固化黄土配比优化方法',
-      applicationNo:'202611174508.2', filingDate:'2026-08-04',
-      inventors:'王雯，邓明昊，薛少博，李占斌', myRank:'第二发明人',
-      note:'材料汇总编号 6 · 审查中/已受理。PCN26007584。',
-      mats:[{name:'专利申请受理通知书', url:'E:\\学术成果-材料汇总\\01专利\\其它受理中-实质性审查中的专利证明文件\\2026-一种考虑宏微观性能协同响应的固化黄土配比优化方法\\PCN26007584-专利申请受理通知书.pdf'}]
-    }
-  ];
-  patents.forEach(function(p){
-    push({
-      id: uid(), type:'patent', status:p.status, title:p.title,
-      fields:{
-        title:p.title, patentType:'发明专利',
-        applicationNo:p.applicationNo, grantNo:p.grantNo || '',
-        applicants:'西安理工大学',
-        inventors:p.inventors, myRank:p.myRank,
-        filingDate:p.filingDate,
-        note:p.note,
-        materials:p.mats
-      },
-      timeline:[{date:today(), text:'对照材料汇总建档 · ' + p.applicationNo}]
-    });
-  });
-
-  /* ---- 软著（主要成果汇总 · 软著表，已下证 3 项）---- */
-  const copies = [
-    {
-      title:'基于 ArcGIS Pro 的流域水文地形分析系统', version:'V1.0', regNo:'2026SR0457449',
-      regDate:'2026-02-20', filingDate:'2026-01-10',
-      file:'软著证书01-基于 ArcGIS Pro 的流域水文地形分析系统.pdf',
-      note:'材料汇总软著 1 · 已登记。干流识别—断面—汇水—库容一体化。'
-    },
-    {
-      title:'二维水动力后处理分析系统', version:'V1.0', regNo:'2026SR0342009',
-      regDate:'2026-03-12', filingDate:'2026-02-01',
-      file:'软著证书02-二维水动力后处理分析系统 .pdf',
-      note:'材料汇总软著 2 · 已登记。WSE/V/H 栅格断面化统计。'
-    },
-    {
-      title:'基于河网拓扑的淤地坝多策略候选址系统', version:'V1.0', regNo:'2026SR0158082',
-      regDate:'2026-04-08', filingDate:'2026-02-20',
-      file:'软著证书03-基于河网拓扑的淤地坝多策略候选址系统.pdf',
-      note:'材料汇总软著 3 · 已登记。Headwater/Junction/Spacing 多策略候选。'
-    }
-  ];
-  copies.forEach(function(c){
-    push({
-      id: uid(), type:'copyright', status:'certified', title:c.title,
-      fields:{
-        title:c.title, version:c.version, regNo:c.regNo,
-        filingDate:c.filingDate, regDate:c.regDate,
-        techStack:'ArcGIS Pro / Python 工具箱',
-        myRank:'第一著作权人',
-        note:c.note,
-        materials:[{name:c.file, url:'E:\\学术成果-材料汇总\\02软著\\' + c.file}]
-      },
-      timeline:[{date:today(), text:'对照材料汇总建档 · 已下证 · ' + c.regNo}]
-    });
-  });
-
+  const hasPaper = DB.items.some(function(it){ return it.type === 'paper'; });
+  if(!hasPaper) seed();
   DB.seedExtrasDone = true;
-  DB.seedExtrasRev = 3;
-  logAct('对照《主要成果汇总》预填：论文 3 · 专利 6 · 软著 3（含时间轴节点）');
+  DB.seedExtrasRev = DEMO_SEED_REV;
+  logAct('已加载公开演示数据（虚构打星，不含真实个人信息）');
 }
 
 /* ---------------- 工具函数 ---------------- */
@@ -1400,6 +1306,8 @@ function importJSON(input){
       if(!confirm('导入将覆盖当前全部数据（' + DB.items.length + ' 条 → ' + obj.items.length + ' 条），确定继续？')) return;
       DB = Object.assign(blank(), obj);
       DB.seedDone = true;
+      DB.seedExtrasDone = true;
+      DB.seedExtrasRev = DEMO_SEED_REV;
       logAct('导入备份成功');
       save(); renderAll(); toast('导入成功', 'check');
     }catch(e){ toast('导入失败：' + e.message, 'warn'); }
