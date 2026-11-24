@@ -26,6 +26,7 @@
       <a href="#" data-act="view" data-view="thesis">大论文</a>
       <a href="#" data-act="view" data-view="patent">专利</a>
       <a href="#" data-act="view" data-view="ip">软著与软件</a>
+      <a href="#" data-act="view" data-view="award">获奖</a>
       <a href="#" data-act="view" data-view="resume">简历墙</a>
     </div>
     <div class="nav-right">
@@ -42,6 +43,7 @@
   <a href="#" data-act="view" data-view="thesis">大论文</a>
   <a href="#" data-act="view" data-view="patent">专利</a>
   <a href="#" data-act="view" data-view="ip">软著与软件</a>
+  <a href="#" data-act="view" data-view="award">获奖</a>
   <a href="#" data-act="view" data-view="resume">简历墙</a>
 </div>
 <input type="file" id="fileIn" accept="application/json,.json" style="display:none" data-act="import-file">
@@ -73,6 +75,7 @@
         <option value="patent">专利</option>
         <option value="copyright" selected>软著</option>
         <option value="software">软件</option>
+        <option value="award">获奖</option>
       </select>
       <input id="qcTitle" placeholder="标题（回车录入）" maxlength="120">
       <input id="qcDue" type="date" title="可选截止日" style="max-width:150px">
@@ -177,6 +180,18 @@
     <div class="list" id="list-copyright"></div>
     <h3 style="font-size:20px;font-weight:600;color:var(--t-1);padding:32px 0 4px">软件成果</h3>
     <div class="list" id="list-software"></div>
+  </div>
+</section>
+
+<!-- ══════════ 07 获奖 ══════════ -->
+<section id="award" class="view" data-view="award">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="idx">07</span><h2>获奖</h2><span class="en">AWARDS</span>
+      <span class="grow"></span>
+      <button class="btn btn-primary btn-sm" data-act="edit-new" data-type="award">＋ 新建</button>
+    </div>
+    <div class="list" id="list-award"></div>
   </div>
 </section>
 
