@@ -939,7 +939,6 @@ function summaryOf(it){
     if(f.myRank) p.push(f.myRank);
     if(f.filingDate) p.push(f.filingDate);
   } else if(it.type==='award'){
-    if(f.level) p.push(f.level);
     if(f.issuer) p.push(f.issuer);
     if(f.myRank) p.push(f.myRank);
     if(f.awardDate) p.push(f.awardDate);
@@ -994,7 +993,9 @@ function renderList(type){
     h += '<div class="row" data-id="' + it.id + '">' +
       '<div class="no">' + String(i+1).padStart(2,'0') + '</div>' +
       '<div class="main">' +
-        '<div class="title row-open" data-act="toggle" data-id="' + it.id + '">' + esc(it.title) + '</div>' +
+        '<div class="title row-open" data-act="toggle" data-id="' + it.id + '">' + esc(it.title) +
+          (it.type==='award' && (it.fields||{}).level ? ' <span class="title-sub">\u00b7 ' + esc(it.fields.level) + '</span>' : '') +
+          '</div>' +
         (summaryOf(it) ? '<div class="desc">' + esc(summaryOf(it)) + '</div>' : '') +
         (due ? '<div class="due-chip' + (due.near ? ' near' : '') + '">节点 ' + esc(due.d.date) +
                (due.left < 0 ? ' · 已过期' : (due.near ? ' · 还有 ' + due.left + ' 天' : '')) + '</div>' : '') +
