@@ -172,11 +172,29 @@ const TYPES = {
       {k:'note',l:'备注',t:'textarea',full:1},
       {k:'materials',l:'相关资料（截图 / 说明书 / 使用文档）',t:'rows',full:1}
     ]
+  },
+
+  /* 获奖：只登记「已获奖」，无申报流水线 */
+  award: {
+    label:'获奖', en:'AWARDS', unit:'项', idx:'07',
+    statuses:[ {k:'won', n:'已获奖', done:true} ],
+    fields:[
+      {k:'title', l:'奖项名称', t:'text', req:1, full:1},
+      {k:'titleEn', l:'英文名称', t:'text', full:1},
+      {k:'level', l:'级别 / 等次', t:'select', opts:['国家级一等奖','国家级二等奖','国家级三等奖','省部级一等奖','省部级二等奖','省部级三等奖','厅局级','校级','行业学会','其他']},
+      {k:'issuer', l:'颁发单位', t:'text', full:1},
+      {k:'awardDate', l:'获奖日期', t:'date'},
+      {k:'myRank', l:'本人排名 / 等次说明', t:'text', full:1, hint:'例：个人奖 / 团队第 2 获奖人'},
+      {k:'nextAction', l:'下一步', t:'text', full:1},
+      {k:'planDate', l:'计划完成日', t:'date'},
+      {k:'note', l:'备注', t:'textarea', full:1},
+      {k:'materials', l:'相关资料（证书 / 通知）', t:'rows', full:1}
+    ]
   }
 };
 
 const DONE_KEYS = {paper:['accepted','published'], thesis:['defended','final'], patent:['granted','maintained'],
-                   copyright:['registered','certified'], software:['released','archived']};
+                   copyright:['registered','certified'], software:['released','archived'], award:['won']};
 
 const EN_STATUS = {
   paper:{idea:'Idea',writing:'Writing',ready:'Ready to submit',submitted:'Submitted',review:'Under review',
@@ -186,7 +204,8 @@ const EN_STATUS = {
   patent:{idea:'Idea',brief:'Invention disclosure',drafting:'Drafting',filed:'Filed',accepted:'Accepted',
           prelim:'Preliminary exam',subst:'Substantive exam',granted:'Granted',maintained:'In force'},
   copyright:{dev:'In development',preparing:'Preparing',filed:'Filed',accepted:'Accepted',registered:'Registered',certified:'Certified'},
-  software:{dev:'In development',alpha:'Beta',released:'Released',iterating:'Maintaining',archived:'Archived'}
+  software:{dev:'In development',alpha:'Beta',released:'Released',iterating:'Maintaining',archived:'Archived'},
+  award:{won:'Awarded'}
 };
 
 /* ---------------- 数据层 ---------------- */
@@ -486,7 +505,7 @@ function renderStats(){
 }
 
 function jumpTo(type){
-  showView(type === 'copyright' || type === 'software' ? 'ip' : type);
+  showView(listViewName(type));
 }
 
 function showView(name){
@@ -510,6 +529,7 @@ function showView(name){
 }
 
 function mapTypeToView(t){ return t; }
+function listViewName(type){ return type === 'copyright' || type === 'software' ? 'ip' : type; }
 
 function renderIdentityClock(){
   const name = DB.profile.name || 'RESEARCHER';
@@ -537,7 +557,8 @@ const WIP_KEYS = {
   thesis:   ['topic','proposal','writing','midterm','predef','blind'],
   patent:   ['idea','brief','drafting'],
   copyright:['dev','preparing','filed','accepted'],
-  software: ['dev','alpha','iterating']
+  software: ['dev','alpha','iterating'],
+  award: []
 };
 
 function wipItems(){
@@ -628,6 +649,9 @@ const STATUS_BUCKETS = {
     { k:'在写', keys:['dev','preparing'] },
     { k:'在审', keys:['filed','accepted'] },
     { k:'下证', keys:['registered','certified'], mint:true }
+  ],
+  award: [
+    { k:'已获奖', keys:['won'], mint:true }
   ]
 };
 
@@ -636,7 +660,8 @@ function renderMap(){
   const rows = [
     { type:'paper', label:'论文' },
     { type:'patent', label:'专利' },
-    { type:'copyright', label:'软著' }
+    { type:'copyright', label:'软著' },
+    { type:'award', label:'获奖' }
   ];
   let h = '<div class="mstat">';
   rows.forEach(function(row){
@@ -698,6 +723,8 @@ function itemMilestones(it){
     add(f.regDate, '下证', true);
   } else if(it.type === 'software'){
     add(f.releaseDate, '发布', true);
+  } else if(it.type === 'award'){
+    add(f.awardDate, '获奖', true);
   }
   out.sort(function(a,b){ return a.date < b.date ? -1 : 1; });
   return out;
@@ -777,7 +804,7 @@ function renderAchTimeline(){
   let ev = [];
   DB.items.forEach(function(it){
     const key = itemPrimaryMilestone(it);
-    const group = (it.type === 'paper') ? 'paper' : (it.type === 'patent' ? 'patent' : 'copyright');
+    const group = (it.type === 'paper') ? 'paper' : (it.type === 'patent' ? 'patent' : (it.type === 'award' ? 'award' : 'copyright'));
     if(filter !== 'all' && group !== filter) return;
     if(key){
       ev.push({ date:key.date, label:key.label, mint:key.mint, it:it, group:group });
@@ -911,6 +938,11 @@ function summaryOf(it){
     if(f.applicationNo) p.push('申请号 ' + f.applicationNo);
     if(f.myRank) p.push(f.myRank);
     if(f.filingDate) p.push(f.filingDate);
+  } else if(it.type==='award'){
+    if(f.level) p.push(f.level);
+    if(f.issuer) p.push(f.issuer);
+    if(f.myRank) p.push(f.myRank);
+    if(f.awardDate) p.push(f.awardDate);
   } else if(it.type==='copyright'){
     if(f.version) p.push(f.version);
     if(f.regNo) p.push('登记号 ' + f.regNo);
@@ -1186,7 +1218,7 @@ function saveItem(type, id){
   logAct((isNew ? '新建' : '更新') + '条目《' + f.title + '》');
 
   save(); closeModal(); renderAll();
-  showView(type === 'copyright' || type === 'software' ? 'ip' : type);
+  showView(listViewName(type));
   toast(isNew ? '已新建「' + f.title + '」' : '已保存', 'check');
 }
 
@@ -1448,6 +1480,21 @@ function copyrightLine(it, i){
   return s;
 }
 
+function awardLine(it, i){
+  const f = it.fields;
+  const title = pickVal(it, 'title', 'titleEn');
+  if(R_OPT.fmt === 'bul'){
+    return '• ' + [f.level, f.issuer, title, f.awardDate].filter(Boolean).join('｜');
+  }
+  const who = meName();
+  let s = refNum(i) + (who ? who + '. ' : '') + title;
+  if(f.level) s += ' · ' + f.level;
+  if(f.issuer) s += ' · ' + f.issuer;
+  if(f.myRank) s += '（' + f.myRank + '）';
+  if(f.awardDate) s += ' · ' + f.awardDate;
+  return s;
+}
+
 function softwareLine(it, i){
   const f = it.fields;
   const title = pickVal(it, 'title', 'titleEn');
@@ -1464,7 +1511,7 @@ function softwareLine(it, i){
   return s;
 }
 
-const LINERS = { paper:paperLine, thesis:thesisLine, patent:patentLine, copyright:copyrightLine, software:softwareLine };
+const LINERS = { paper:paperLine, thesis:thesisLine, patent:patentLine, copyright:copyrightLine, software:softwareLine, award:awardLine };
 
 /* 资料清单：把每条成果挂的文件 / 链接汇总出来，方便做简历时直接拿材料 */
 function materialLine(it, i){
@@ -1483,7 +1530,8 @@ const SECT = {
   thesis:   {zh:'学位论文',        en:'Dissertations'},
   patent:   {zh:'发明专利',        en:'Patents'},
   copyright:{zh:'软件著作权',      en:'Software Copyrights'},
-  software: {zh:'软件成果',        en:'Software Projects'}
+  software: {zh:'软件成果',        en:'Software Projects'},
+  award:    {zh:'获奖荣誉',        en:'Awards & Honors'}
 };
 
 function resumeItems(){
@@ -1514,7 +1562,7 @@ function buildResumeText(){
     list.forEach(function(it, i){ out.push(LINERS[type](it, i+1)); });
     out.push('');
   }
-  const ORDER = ['paper','thesis','patent','copyright','software'];
+  const ORDER = ['paper','thesis','patent','copyright','software','award'];
 
   if(R_OPT.fmt === 'mat'){
     const list = sortByYear(items.slice());
