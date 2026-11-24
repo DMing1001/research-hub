@@ -471,7 +471,7 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .toast .ti{ width:14px; height:14px; flex:none; }
 
 /* ---------- 统计条 ---------- */
-.stats{ display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid var(--line); }
+.stats{ display:grid; grid-template-columns:repeat(6,1fr); border-top:1px solid var(--line); }
 .stat{ padding:var(--sp-7) var(--sp-6); border-right:1px solid var(--line); cursor:pointer;
        transition:background .2s ease; }
 .stat:last-child{ border-right:none; }
@@ -480,6 +480,7 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .stat .n small{ font-size:14px; font-weight:400; color:var(--t-5); margin-left:4px; }
 .stat .l{ font-size:14px; color:var(--t-4); margin-top:var(--sp-2); }
 .stat .p{ font-size:13px; color:var(--t-6); margin-top:var(--sp-1); }
+@media (max-width:1200px){ .stats{ grid-template-columns:repeat(3,1fr); } }
 @media (max-width:1023px){ .stats{ grid-template-columns:repeat(3,1fr); } .stat{ border-bottom:1px solid var(--line); } }
 @media (max-width:480px){ .stats{ grid-template-columns:repeat(2,1fr); } .stat .n{ font-size:32px; } }
 
