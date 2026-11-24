@@ -752,7 +752,7 @@ function renderAchTimeline(){
       if(n.cur) cls += n.done ? ' mint' : ' done';
       else if(n.past) cls += ' done';
       else cls += ' plan';
-      return '<div class="' + cls + '">' +
+      return '<div class="' + cls + '" title="' + esc(n.label) + '">' +
         '<div class="top">' +
           dateStackHTML(n.date) +
           '<span class="ev">' + esc(n.label) + '</span>' +
@@ -795,7 +795,9 @@ function renderAchTimeline(){
   const kindOf = function(g){ return g==='paper' ? 'PAPER' : (g==='patent' ? 'PATENT' : 'IP'); };
   box.innerHTML = '<div class="tl-line"><div class="tl-nodes">' + ev.map(function(e){
     const cls = 'tl-node ' + (e.mint ? 'mint' : (e.soft ? 'plan' : 'done'));
-    return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" tabindex="0" role="button" title="' + esc(e.it.title) + '">' +
+    return '<div class="' + cls + '" data-act="tl-item" data-id="' + e.it.id + '" tabindex="0" role="button"' +
+           ' title="' + esc(e.it.title) + '"' +
+           ' data-full="' + esc(e.it.title) + '">' +
       '<div class="top">' +
         dateStackHTML(e.date) +
         '<span class="ev">' + esc(e.label) + '</span>' +
@@ -1184,6 +1186,7 @@ function saveItem(type, id){
   logAct((isNew ? '新建' : '更新') + '条目《' + f.title + '》');
 
   save(); closeModal(); renderAll();
+  showView(type === 'copyright' || type === 'software' ? 'ip' : type);
   toast(isNew ? '已新建「' + f.title + '」' : '已保存', 'check');
 }
 
@@ -1937,7 +1940,16 @@ function openEditor(type, id){
 /* ---------------- 事件委托 ---------------- */
 
 function bindEvents(){
+  // 整行点击展开/折叠（忽略按钮/链接/表单）
   document.addEventListener('click', function(e){
+    const row = e.target.closest('.row');
+    if(row && row.getAttribute('data-id')){
+      const interactive = e.target.closest('button, a, input, select, textarea, [data-act]');
+      if(!interactive){
+        toggleOpen(row.getAttribute('data-id'));
+        return;
+      }
+    }
     const t = e.target.closest('[data-act]');
     if(!t) return;
     const act = t.getAttribute('data-act');
@@ -2015,6 +2027,18 @@ function bindEvents(){
     if(e.key === 'Enter'){ e.preventDefault(); quickAdd(); }
   });
   $('#fileIn').addEventListener('change', function(){ importJSON(this); });
+
+  // 顶部细滚动进度条
+  const bar = document.getElementById('scrollProg');
+  if(bar){
+    const onScroll = function(){
+      const h = document.documentElement.scrollHeight - window.innerHeight;
+      const p = h > 0 ? (window.scrollY / h) : 0;
+      bar.style.width = Math.min(100, Math.max(0, p * 100)) + '%';
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
 
   const segTl = $('#segTl');
   if(segTl){
