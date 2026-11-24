@@ -517,6 +517,32 @@ section.view.on{ min-height:calc(100vh - 56px); }
 .row .acts{ display:flex; gap:var(--sp-2); margin-top:var(--sp-3); flex-wrap:wrap; }
 .row .stg{ font-size:13px; color:var(--t-6); font-variant-numeric:tabular-nums; }
 .row-open{ cursor:pointer; }
+.row{ cursor:pointer; }
+.row:hover{ background:rgba(0,0,0,.035); }
+.row:hover .title{ text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+.row.detail-open{ background:rgba(0,0,0,.02); }
+.row-open::after{
+  content:' ▾'; font-size:11px; color:var(--t-6); margin-left:6px;
+}
+
+/* 滚动顶部细进度条 */
+.scroll-prog{
+  position:fixed; top:0; left:0; height:3px; width:0;
+  background:var(--t-1); z-index:200; pointer-events:none;
+  transition:width .08s linear;
+}
+
+/* 时间轴完整标题浮层 */
+.tl-node{ position:relative; }
+.tl-node[data-full]:hover::after{
+  content:attr(data-full);
+  position:absolute; left:50%; top:-8px; transform:translate(-50%,-100%);
+  max-width:280px; width:max-content;
+  background:var(--t-1); color:var(--bg-2);
+  font-size:12px; line-height:1.5; padding:8px 12px;
+  white-space:normal; text-align:left; z-index:30;
+  pointer-events:none;
+}
 
 .detail{
   padding:0 var(--sp-6) var(--sp-7) calc(24px + var(--sp-6) + var(--sp-6));
