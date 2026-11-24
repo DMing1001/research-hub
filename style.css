@@ -757,3 +757,5 @@ footer p{ font-size:13px; color:var(--t-5); line-height:19.5px; }
   .print-only{ display:block !important; }
 }
 .print-only{ display:none; }
+
+.row .title-sub{ font-size:16px; font-weight:600; color:var(--t-1); }
